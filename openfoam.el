@@ -33,8 +33,8 @@
 ;;    \\  /    A nd           |
 ;;     \\/     M anipulation  |
 ;;
-;; A major mode for editing OpenFOAM data files and utility commands
-;; for OpenFOAM case directories.
+;; An Emacs major mode for editing OpenFOAM data files and
+;; utility commands for OpenFOAM case directories.
 
 ;;; Code:
 
