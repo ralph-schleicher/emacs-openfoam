@@ -47,6 +47,39 @@
   :link '(emacs-commentary-link "openfoam.el")
   :prefix "openfoam-")
 
+;;;; Case Directories
+
+(defun openfoam-create-case-directory (directory)
+  "Create an OpenFOAM case directory."
+  (interactive "F")
+  (let ((directory (file-name-as-directory directory)))
+    (mkdir directory t)
+    (let ((dir (expand-file-name "0" directory)))
+      (unless (file-directory-p dir)
+	(mkdir dir)))
+    (let ((dir (expand-file-name "constant" directory)))
+      (unless (file-directory-p dir)
+	(mkdir dir)))
+    (let ((dir (expand-file-name "constant/polymesh" directory)))
+      (unless (file-directory-p dir)
+	(mkdir dir)))
+    (let ((dir (expand-file-name "system" directory)))
+      (unless (file-directory-p dir)
+	(mkdir dir)))
+    (let ((file (expand-file-name "system/controlDict" directory)))
+      (unless (file-exists-p file)
+	(with-temp-buffer
+	  (write-file file))))
+    (let ((file (expand-file-name "system/fvSchemes" directory)))
+      (unless (file-exists-p file)
+	(with-temp-buffer
+	  (write-file file))))
+    (let ((file (expand-file-name "system/fvSolution" directory)))
+      (unless (file-exists-p file)
+	(with-temp-buffer
+	  (write-file file))))
+    directory))
+
 ;;;; Major Mode
 
 (c-add-style "OpenFOAM"
