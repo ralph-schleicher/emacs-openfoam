@@ -184,6 +184,42 @@ See ‘openfoam-data-file-template’ for more information."
     ;; Turn on OpenFOAM mode.
     (openfoam-mode)))
 
+(defun openfoam-insert-data-file-header ()
+  "Insert an OpenFOAM data file header into the current buffer."
+  (interactive)
+  (barf-if-buffer-read-only)
+  (unless (eq major-mode 'openfoam-mode)
+    (openfoam-mode))
+  (let* ((buffer-file-name (buffer-file-name))
+	 (file-name (and buffer-file-name
+			 (file-name-nondirectory buffer-file-name)))
+	 (directory (and buffer-file-name
+			 (file-name-directory buffer-file-name)))
+	 (case-directory (and directory
+			      (openfoam-case-directory directory)))
+	 (location (and directory case-directory
+			(directory-file-name
+			 (file-relative-name directory case-directory)))))
+    (save-excursion
+      (goto-char (point-min))
+      (while (looking-at comment-start-skip)
+	(forward-comment 1))
+      (unless (let ((case-fold-search nil))
+		(re-search-forward "\\<FoamFile\\>" nil t))
+	(let ((start (point)))
+	  (insert "\n"
+		  "FoamFile\n"
+		  "{\n"
+		  "version 2.0;\n"
+		  "format ascii;\n"
+		  "class dictionary;\n"
+		  "object " (or file-name "unknown") ";\n"
+		  (if location
+		      (concat "location \"" location "\";\n")
+		    "")
+		  "}\n")
+	  (indent-region start (point)))))))
+
 ;;;; Case Directories
 
 (defun openfoam-create-case-directory (directory)
