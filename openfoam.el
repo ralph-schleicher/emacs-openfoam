@@ -300,7 +300,7 @@ See ‘openfoam-data-file-template’ for more information."
 		(arglist-cont-nonempty . 0)
 		(arglist-close . 0)
 		(stream-op . +)
-		(cpp-macro . +)
+		(cpp-macro . c-lineup-cpp-define)
 		)))
 
 (defcustom openfoam-default-style "OpenFOAM"
