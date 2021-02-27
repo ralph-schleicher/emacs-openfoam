@@ -225,7 +225,7 @@ See ‘openfoam-data-file-template’ for more information."
 
 (defun openfoam-case-directory (file-name-or-directory)
   "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
-  (let ((directory (file-name-directory file-name)))
+  (let ((directory (file-name-directory file-name-or-directory)))
     (while (and directory (not (and (file-directory-p
 				     (expand-file-name "constant" directory))
 				    (file-directory-p
