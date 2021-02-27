@@ -80,6 +80,23 @@
 	  (write-file file))))
     directory))
 
+(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
+  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
+  (if (memq system-type '(windows-nt ms-dos))
+      (cl-equalp file-name-1 file-name-2)
+    (string= file-name-1 file-name-2)))
+
+(defun openfoam-case-directory (file-name-or-directory)
+  "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
+  (let ((directory (file-name-directory file-name)))
+    (while (and directory (not (and (file-directory-p
+				     (expand-file-name "constant" directory))
+				    (file-directory-p
+				     (expand-file-name "system" directory)))))
+      (let ((up (file-name-directory (directory-file-name directory))))
+	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
+    directory))
+
 ;;;; Major Mode
 
 (c-add-style "OpenFOAM"
