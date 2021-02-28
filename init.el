@@ -11,11 +11,11 @@
 		"//\n"
 		"// Author: %n <%m>\n"))))
 	(concat
-	 "//  =========                 |  -*- OpenFOAM -*-\n"
-	 "//  \\\\      /  F ield         |\n"
-	 "//   \\\\    /   O peration     |\n"
-	 "//    \\\\  /    A nd           |\n"
-	 "//     \\\\/     M anipulation  |\n"
+	 "// Open ∇             ┆ -*- OpenFOAM -*-\n"
+	 "//      F ield        ┆\n"
+	 "//      O peration    ┆\n"
+	 "//      A nd          ┆\n"
+	 "//      M anipulation ┆\n"
 	 "//\n"
 	 copyright-notice
 	 "\n"
