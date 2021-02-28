@@ -34,8 +34,7 @@ VERSION = α
 	markdown $< > $@~ && mv -f $@~ $@
 
 .PHONY: all
-all:
-	@:
+all: autoloads
 
 .PHONY: clean
 clean:
