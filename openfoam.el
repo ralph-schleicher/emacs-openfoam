@@ -349,6 +349,9 @@ Run the ‘c-set-style’ command to change the indentation style.")
   (setq indent-tabs-mode nil)
   ())
 
+;;;###autoload
+(defalias '∇-mode 'openfoam-mode)
+
 (provide 'openfoam)
 
 ;;; openfoam.el ends here
