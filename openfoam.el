@@ -27,14 +27,14 @@
 
 ;;; Commentary:
 
-;;  =========                 |
-;;  \\      /  F ield         |
-;;   \\    /   O peration     |
-;;    \\  /    A nd           |
-;;     \\/     M anipulation  |
+;; ┆ Open ∇             ┆
+;; ┆      F ield        ┆
+;; ┆      O peration    ┆
+;; ┆      A nd          ┆
+;; ┆      M anipulation ┆
 ;;
-;; An Emacs major mode for editing OpenFOAM data files and
-;; utility commands for OpenFOAM case directories.
+;; An Emacs major mode for editing OpenFOAM data files; and user
+;; commands for OpenFOAM case directories.
 
 ;;; Code:
 
@@ -131,7 +131,7 @@ See ‘openfoam-data-file-template’ for more information."
 				      (?u (or user-login-name (user-login-name)))
 				      (?n (or user-full-name (user-full-name)))
 				      (?m user-mail-address)
-				      (?h system-name)
+				      (?h (system-name))
 				      (?d mail-host-address)
 				      (?p (or path ""))
 				      (?f (if path (file-name-nondirectory path) ""))
