@@ -308,7 +308,9 @@ See ‘openfoam-data-file-template’ for more information."
 
 (defcustom openfoam-default-style "OpenFOAM"
   "Default indentation style for OpenFOAM data files.
-Run the ‘c-set-style’ command to change the indentation style.")
+Run the ‘c-set-style’ command to change the indentation style."
+  :type 'string
+  :group 'openfoam)
 
 (defconst openfoam-cc-mode 'c++-mode
   "Major mode symbol of the underlying CC Mode.")
