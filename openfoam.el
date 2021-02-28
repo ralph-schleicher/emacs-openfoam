@@ -92,6 +92,7 @@ date and time."
 		 (string :tag "Template"))
   :group 'openfoam)
 
+;;;###autoload
 (defun openfoam-apply-data-file-template ()
   "Apply the OpenFOAM data file template to the current buffer.
 See ‘openfoam-data-file-template’ for more information."
@@ -184,6 +185,7 @@ See ‘openfoam-data-file-template’ for more information."
     ;; Turn on OpenFOAM mode.
     (openfoam-mode)))
 
+;;;###autoload
 (defun openfoam-insert-data-file-header ()
   "Insert an OpenFOAM data file header into the current buffer."
   (interactive)
@@ -222,6 +224,7 @@ See ‘openfoam-data-file-template’ for more information."
 
 ;;;; Case Directories
 
+;;;###autoload
 (defun openfoam-create-case-directory (directory)
   "Create an OpenFOAM case directory."
   (interactive "F")
@@ -326,6 +329,7 @@ Run the ‘c-set-style’ command to change the indentation style.")
 (defvar openfoam-font-lock-keywords c-font-lock-keywords-1
   "Default expressions to highlight in OpenFOAM mode buffers.")
 
+;;;###autoload
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
