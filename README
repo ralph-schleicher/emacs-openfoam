@@ -1,8 +1,20 @@
- =========                 |
- \\      /  F ield         |
-  \\    /   O peration     |
-   \\  /    A nd           |
-    \\/     M anipulation  |
+┆ Open ∇             ┆
+┆      F ield        ┆
+┆      O peration    ┆
+┆      A nd          ┆
+┆      M anipulation ┆
 
-An Emacs major mode for editing OpenFOAM data files and
-utility commands for OpenFOAM case directories.
+An Emacs major mode for editing OpenFOAM data files; and user
+commands for OpenFOAM case directories.
+
+
+* Installation
+
+Copy file ‘openfoam.el’ and ‘openfoam-autoloads.el’ into a
+directory in your Emacs load path.  Optionally byte-compile
+‘openfoam.el’.  Then add the following code to your Emacs
+initialization file:
+
+     (require 'openfoam-autoloads)
+
+See file ‘init.el’ for my personal settings.
