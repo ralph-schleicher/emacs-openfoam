@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24635 39267 925901
-;;;;;;  494000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24636 3907 385385
+;;;;;;  677000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-apply-data-file-template "openfoam" "\
@@ -23,6 +23,8 @@ Create an OpenFOAM case directory.
 Major mode for OpenFOAM data files.
 
 \(fn)" t nil)
+
+(defalias '∇-mode 'openfoam-mode)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "openfoam" '("openfoam-")))
 
