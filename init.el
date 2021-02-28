@@ -11,7 +11,7 @@
 		"//\n"
 		"// Author: %n <%m>\n"))))
 	(concat
-	 "// Open ∇             ┆ -*- OpenFOAM -*-\n"
+	 "// Open ∇             ┆ -*- mode: ∇; coding: utf-8; -*-\n"
 	 "//      F ield        ┆\n"
 	 "//      O peration    ┆\n"
 	 "//      A nd          ┆\n"
