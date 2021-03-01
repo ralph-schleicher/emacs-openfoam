@@ -38,11 +38,11 @@ all: autoloads
 
 .PHONY: clean
 clean:
-	@:
+	rm -f *.elc
 
 .PHONY: check
 check: all
-	@:
+	emacs --batch --funcall batch-byte-compile openfoam.el
 
 ### Maintenance
 
