@@ -58,6 +58,15 @@
 	  string)
     (buffer-substring-no-properties (point-min) (point-max))))
 
+(defun openfoam-clamp (number min max)
+  "Limit NUMBER to the closed interval [MIN, MAX]."
+  (cond ((<= number min)
+	 min)
+	((>= number max)
+	 max)
+	(t
+	 number)))
+
 ;;;; Data Files
 
 (defcustom openfoam-data-file-template "\
@@ -124,7 +133,7 @@ See ‘openfoam-data-file-template’ for more information."
 				 (goto-char (point-max))
 				 (skip-chars-backward " \t\n" start)
 				 (point))))
-		     (setq offs (- (max start (min (point) end)) start))
+		     (setq offs (- (openfoam-clamp (point) start end) start))
 		     (buffer-substring-no-properties start end))))
 	   (templ (with-temp-buffer
 		    (buffer-disable-undo)
