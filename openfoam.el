@@ -47,6 +47,17 @@
   :link '(emacs-commentary-link "openfoam.el")
   :prefix "openfoam-")
 
+(defun openfoam-string-quote (string)
+  "Quote all meta-characters in a string."
+  (with-temp-buffer
+    (mapc (lambda (char)
+	    (when (or (char-equal char ?\\)
+		      (char-equal char ?\"))
+	      (insert ?\\))
+	    (insert char))
+	  string)
+    (buffer-substring-no-properties (point-min) (point-max))))
+
 ;;;; Data Files
 
 (defcustom openfoam-data-file-template "\
@@ -206,21 +217,21 @@ See ‘openfoam-data-file-template’ for more information."
       (goto-char (point-min))
       (while (looking-at comment-start-skip)
 	(forward-comment 1))
-      (unless (let ((case-fold-search nil))
-		(re-search-forward "\\<FoamFile\\>" nil t))
-	(let ((start (point)))
-	  (insert "\n"
-		  "FoamFile\n"
-		  "{\n"
-		  "version 2.0;\n"
-		  "format ascii;\n"
-		  "class dictionary;\n"
-		  "object " (or file-name "unknown") ";\n"
-		  (if location
-		      (concat "location \"" location "\";\n")
-		    "")
-		  "}\n")
-	  (indent-region start (point)))))))
+      (let ((start (point)))
+	(insert "\n"
+		"FoamFile\n"
+		"{\n"
+		"version 2.0;\n"
+		"format ascii;\n"
+		"class dictionary;\n"
+		"object " (or file-name "unknown") ";\n"
+		(if location
+		    (concat "location \""
+			    (openfoam-string-quote location)
+			    "\";\n")
+		  "")
+		"}\n")
+	(indent-region start (point))))))
 
 ;;;; Case Directories
 
