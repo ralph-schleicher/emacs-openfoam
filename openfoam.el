@@ -242,6 +242,25 @@ See ‘openfoam-data-file-template’ for more information."
 		"}\n")
 	(indent-region start (point))))))
 
+(defcustom openfoam-data-file-contents-alist ()
+  "Alist of initial file contents for OpenFOAM data files.
+List elements are cons cells of the form ‘(FILE-NAME . CONTENTS)’
+where FILE-NAME is the relative file name in a case directory and
+CONTENTS is the file contents."
+  :type '(repeat (cons (string :tag "File name")
+		       (string :tag "File contents")))
+  :group 'openfoam)
+
+(defun openfoam-add-to-data-file-contents-alist (file-name contents)
+  "Add or update an element in ‘openfoam-data-file-contents-alist’."
+  (let ((cell (assoc file-name openfoam-data-file-contents-alist 'openfoam-file-name-equal-p)))
+    (if (not (null cell))
+	(setcdr cell contents)
+      (push (cons file-name contents) openfoam-data-file-contents-alist)))
+  openfoam-data-file-contents-alist)
+
+(put 'openfoam-add-to-data-file-contents-alist 'lisp-indent-function 1)
+
 ;;;; Case Directories
 
 ;;;###autoload
