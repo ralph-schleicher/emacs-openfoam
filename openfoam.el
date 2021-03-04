@@ -291,7 +291,7 @@ CONTENTS is the file contents."
 		      (save-buffer 0))))))
       (create-directory "0")
       (create-directory "constant")
-      (create-directory "constant/polymesh")
+      (create-directory "constant/polyMesh")
       (create-directory "system")
       (create-data-file "system/controlDict")
       (create-data-file "system/fvSchemes")
