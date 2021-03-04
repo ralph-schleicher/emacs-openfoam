@@ -33,6 +33,66 @@
 	 "\n"
 	 "/// %f ends here\n")))
 
+(with-eval-after-load 'openfoam
+  (openfoam-add-to-data-file-contents-alist "system/controlDict" "\
+application laplacianFoam;
+
+// Simulation time and time step.
+startFrom latestTime;
+startTime 0;
+stopAt endTime;
+endTime 1;
+deltaT 0.05;
+adjustTimeStep no;
+runTimeModifiable yes;
+
+// Data logging.
+writeControl timeStep;
+writeInterval 1;
+writeFormat ascii;
+writePrecision 6;
+writeCompression off;
+timeFormat general;
+timePrecision 6;
+purgeWrite 0;
+")
+  (openfoam-add-to-data-file-contents-alist "system/fvSchemes" "\
+ddtSchemes
+{
+    default steadyState;
+}
+
+gradSchemes
+{
+    default Gauss linear;
+}
+
+divSchemes
+{
+    default none;
+}
+
+laplacianSchemes
+{
+    default Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default linear;
+}
+
+snGradSchemes
+{
+    default corrected;
+}
+")
+  (openfoam-add-to-data-file-contents-alist "system/fvSolution" "\
+solvers
+{
+}
+"))
+
 (add-hook 'openfoam-mode-hook 'rs:openfoam-setup)
 
 (defun rs:openfoam-setup ()
