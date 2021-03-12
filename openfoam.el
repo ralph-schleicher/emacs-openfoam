@@ -145,6 +145,9 @@ See ‘openfoam-data-file-template’ for more information."
 		    ;; In case the user modifies some parameters, e.g.
 		    ;; the mail address, depending on the major mode.
 		    (openfoam-mode)
+		    ;; Turn off syntax highlighting.
+		    (when (fboundp 'font-lock-mode)
+		      (font-lock-mode 0))
 		    ;; Fill in template.
 		    (erase-buffer)
 		    (insert openfoam-data-file-template)
