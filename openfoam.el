@@ -112,6 +112,11 @@ date and time."
 		 (string :tag "Template"))
   :group 'openfoam)
 
+(defcustom openfoam-apply-data-file-template-hook nil
+  "Hook called by ‘openfoam-apply-data-file-template’."
+  :type 'hook
+  :group 'openfoam)
+
 ;;;###autoload
 (defun openfoam-apply-data-file-template ()
   "Apply the OpenFOAM data file template to the current buffer.
@@ -203,7 +208,9 @@ See ‘openfoam-data-file-template’ for more information."
 		     (point-min)
 		   (+ pos offs))))
     ;; Turn on OpenFOAM mode.
-    (openfoam-mode)))
+    (openfoam-mode)
+    ;; Provide a hook for further modifications.
+    (run-hooks 'openfoam-apply-data-file-template-hook)))
 
 ;;;###autoload
 (defun openfoam-insert-data-file-header ()
