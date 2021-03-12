@@ -367,8 +367,10 @@ Run the ‘c-set-style’ command to change the indentation style."
 (defconst openfoam-cc-mode 'c++-mode
   "Major mode symbol of the underlying CC Mode.")
 
-(defvar openfoam-mode-hook nil
-  "Hook called by ‘openfoam-mode’.")
+(defcustom openfoam-mode-hook nil
+  "Hook called by ‘openfoam-mode’."
+  :type 'hook
+  :group 'openfoam)
 
 (defvar openfoam-mode-syntax-table
   (let ((syntax-table (make-syntax-table)))
