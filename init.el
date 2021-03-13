@@ -19,19 +19,13 @@
 	 "//\n"
 	 copyright-notice
 	 "\n"
-	 "FoamFile\n"
-	 "{\n"
-	 "    version 2.0;\n"
-	 "    format ascii;\n"
-	 "    class dictionary;\n"
-	 "    object %f;\n"
-	 "}\n"
-	 "\n"
 	 "/// Code:\n"
 	 "\n"
 	 "%|\n"
 	 "\n"
 	 "/// %f ends here\n")))
+
+(add-hook 'openfoam-apply-data-file-template-hook 'openfoam-insert-data-file-header)
 
 (with-eval-after-load 'openfoam
   (openfoam-add-to-data-file-contents-alist "system/controlDict" "\
