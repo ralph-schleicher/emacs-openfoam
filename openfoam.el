@@ -215,10 +215,35 @@ See ‘openfoam-data-file-template’ for more information."
     ;; Provide a hook for further modifications.
     (run-hooks 'openfoam-apply-data-file-template-hook)))
 
+(defcustom openfoam-insert-data-file-header-position-hook nil
+  "Leave point where to insert the OpenFOAM data file header.
+Hook called by ‘openfoam-insert-data-file-header’."
+  :type 'hook
+  :group 'openfoam)
+
+(defcustom openfoam-insert-data-file-header-line-limit 100
+  "Number of lines searched at the beginning of a file to find a position
+for inserting the OpenFOAM data file header.  A negative value counts
+from the end, zero means to search the whole file."
+  :type 'integer
+  :group 'openfoam)
+
 ;;;###autoload
-(defun openfoam-insert-data-file-header ()
-  "Insert an OpenFOAM data file header into the current buffer."
-  (interactive)
+(defun openfoam-insert-data-file-header (&optional here)
+  "Insert an OpenFOAM data file header into the current buffer.
+
+With prefix argument, insert the data file header at the current line.
+Otherwise, run ‘openfoam-insert-data-file-header-position-hook’ to find
+a suitable buffer position.  If no hook function is configured, search
+for the ‘Code:’ special comment and insert the data file header after
+it.  If ‘Code:’ is not found, insert the data file header before the
+first dictionary entry.
+
+While looking for a suitable buffer position, the special
+variable ‘limit’ is bound to the buffer position specified by
+‘openfoam-insert-data-file-header-line-limit’.  Whether or not
+a hook function obeys this limit is undefined."
+  (interactive "P")
   (barf-if-buffer-read-only)
   (unless (eq major-mode 'openfoam-mode)
     (openfoam-mode))
@@ -232,16 +257,48 @@ See ‘openfoam-data-file-template’ for more information."
 	 (location (and directory case-directory
 			(directory-file-name
 			 (file-relative-name directory case-directory)))))
-    (save-excursion
-      (goto-char (point-min))
-      (while (looking-at comment-start-skip)
-	(forward-comment 1))
+    (defvar limit) ;dynamic scope
+    (let ((point (point-marker)))
+      (if (not (null here))
+	  (beginning-of-line)
+	(goto-char (point-min))
+	(let ((limit (if (= openfoam-insert-data-file-header-line-limit 0)
+			 (point-max)
+		       (save-excursion
+			 (when (< openfoam-insert-data-file-header-line-limit 0)
+			   (goto-char (point-max)))
+			 (forward-line openfoam-insert-data-file-header-line-limit)
+			 (point)))))
+	  (cond ((not (null openfoam-insert-data-file-header-position-hook))
+		 (run-hooks 'openfoam-insert-data-file-header-position-hook))
+		;; Search for the ‘Code:’ special comment.
+		((let ((case-fold-search t))
+		   (re-search-forward "^//+ *Code:$" limit t))
+		 (unless (= (forward-line 1) 0)
+		   (insert ?\n))
+		 ;; Add an extra empty line.
+		 (insert ?\n))
+		;; Skip across initial comments, i.e. leave point at
+		;; the beginning of the line after the last comment.
+		((looking-at "/[/*]")
+		 (forward-comment (point-max))
+		 (re-search-backward "[^[:blank:]\n]" nil t)
+		 ;; The ‘forward-line’ function only returns non-zero
+		 ;; if it can't move at all.
+		 (end-of-line)
+		 (unless (= (forward-line 1) 0)
+		   (insert ?\n))
+		 ;; Add an extra empty line.
+		 (insert ?\n))
+		;; Stay at beginning of file.
+		(t))))
       (let ((start (point)))
-	(insert "\n"
-		"FoamFile\n"
+	(insert "FoamFile\n"
 		"{\n"
 		"version 2.0;\n"
 		"format ascii;\n"
+		;; TODO: Attempt to infer the class from
+		;; the file name or location.
 		"class dictionary;\n"
 		"object " (or file-name "unknown") ";\n"
 		(if location
@@ -250,7 +307,10 @@ See ‘openfoam-data-file-template’ for more information."
 			    "\";\n")
 		  "")
 		"}\n")
-	(indent-region start (point))))))
+	(indent-region start (point)))
+      ;; Restore point.
+      (goto-char point)))
+  ())
 
 (defcustom openfoam-data-file-contents-alist ()
   "Alist of initial file contents for OpenFOAM data files.
