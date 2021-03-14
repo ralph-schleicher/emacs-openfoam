@@ -228,6 +228,8 @@ from the end, zero means to search the whole file."
   :type 'integer
   :group 'openfoam)
 
+(defvar openfoam-insert-data-file-header-limit)
+
 ;;;###autoload
 (defun openfoam-insert-data-file-header (&optional here)
   "Insert an OpenFOAM data file header into the current buffer.
@@ -239,10 +241,10 @@ for the ‘Code:’ special comment and insert the data file header after
 it.  If ‘Code:’ is not found, insert the data file header before the
 first dictionary entry.
 
-While looking for a suitable buffer position, the special
-variable ‘limit’ is bound to the buffer position specified by
-‘openfoam-insert-data-file-header-line-limit’.  Whether or not
-a hook function obeys this limit is undefined."
+While looking for a suitable buffer position, the special variable
+‘openfoam-insert-data-file-header-limit’ is bound to the buffer position
+specified by ‘openfoam-insert-data-file-header-line-limit’.  Whether or
+not a hook function obeys this limit is undefined."
   (interactive "P")
   (barf-if-buffer-read-only)
   (unless (eq major-mode 'openfoam-mode)
@@ -257,23 +259,23 @@ a hook function obeys this limit is undefined."
 	 (location (and directory case-directory
 			(directory-file-name
 			 (file-relative-name directory case-directory)))))
-    (defvar limit) ;dynamic scope
     (let ((point (point-marker)))
       (if (not (null here))
 	  (beginning-of-line)
 	(goto-char (point-min))
-	(let ((limit (if (= openfoam-insert-data-file-header-line-limit 0)
-			 (point-max)
-		       (save-excursion
-			 (when (< openfoam-insert-data-file-header-line-limit 0)
-			   (goto-char (point-max)))
-			 (forward-line openfoam-insert-data-file-header-line-limit)
-			 (point)))))
+	(let ((openfoam-insert-data-file-header-limit
+	       (if (= openfoam-insert-data-file-header-line-limit 0)
+		   (point-max)
+		 (save-excursion
+		   (when (< openfoam-insert-data-file-header-line-limit 0)
+		     (goto-char (point-max)))
+		   (forward-line openfoam-insert-data-file-header-line-limit)
+		   (point)))))
 	  (cond ((not (null openfoam-insert-data-file-header-position-hook))
 		 (run-hooks 'openfoam-insert-data-file-header-position-hook))
 		;; Search for the ‘Code:’ special comment.
 		((let ((case-fold-search t))
-		   (re-search-forward "^//+ *Code:$" limit t))
+		   (re-search-forward "^//+ *Code:$" openfoam-insert-data-file-header-limit t))
 		 (unless (= (forward-line 1) 0)
 		   (insert ?\n))
 		 ;; Add an extra empty line.
