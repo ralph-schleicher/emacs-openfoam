@@ -67,6 +67,16 @@
 	(t
 	 number)))
 
+(defsubst openfoam-skip-forward ()
+  "Move forward across comments and whitespace characters.
+Leave point where scanning stops."
+  (forward-comment (point-max)))
+
+(defsubst openfoam-skip-backward ()
+  "Move backward across comments and whitespace characters.
+Leave point where scanning stops."
+  (forward-comment (- (point))))
+
 ;;;; Data Files
 
 (defcustom openfoam-data-file-template "\
