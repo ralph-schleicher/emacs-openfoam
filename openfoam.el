@@ -40,6 +40,7 @@
 
 (require 'cl-lib)
 (require 'cc-mode)
+(require 'smie)
 
 (defgroup openfoam nil
   "OpenFOAM files and directories."
@@ -293,7 +294,7 @@ not a hook function obeys this limit is undefined."
 		;; Skip across initial comments, i.e. leave point at
 		;; the beginning of the line after the last comment.
 		((looking-at "/[/*]")
-		 (forward-comment (point-max))
+		 (openfoam-skip-forward)
 		 (re-search-backward "[^[:blank:]\n]" nil t)
 		 ;; The ‘forward-line’ function only returns non-zero
 		 ;; if it can't move at all.
@@ -366,7 +367,7 @@ CONTENTS is the file contents."
 		      (unless (re-search-forward "-\\*-" (save-excursion (end-of-line) (point)) t)
 			(openfoam-apply-data-file-template))
 		      (goto-char (point-min))
-		      (forward-comment (point-max))
+		      (openfoam-skip-forward)
 		      (unless (looking-at "FoamFile\\>")
 			(openfoam-insert-data-file-header))
 		      (set-buffer-modified-p t)
