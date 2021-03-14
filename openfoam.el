@@ -436,7 +436,47 @@ Run the ‘c-set-style’ command to change the indentation style."
 
 (defvar openfoam-mode-syntax-table
   (let ((syntax-table (make-syntax-table)))
-    (c-populate-syntax-table syntax-table)
+    ;; String constants.
+    (modify-syntax-entry ?\" "\"" syntax-table)
+    (modify-syntax-entry ?\\ "\\" syntax-table)
+    ;; Comments.  The primary comment style is a C++ line comment and
+    ;; the secondary comment style is a C block comment.
+    (modify-syntax-entry ?/  ". 124" syntax-table)
+    (modify-syntax-entry ?*  ". 23b" syntax-table)
+    (modify-syntax-entry ?\n ">"     syntax-table)
+    (modify-syntax-entry ?\r ">"     syntax-table)
+    ;; Dissimilar pairs.
+    (modify-syntax-entry ?\( "()" syntax-table) ;list
+    (modify-syntax-entry ?\) ")(" syntax-table)
+    (modify-syntax-entry ?\[ "(]" syntax-table) ;dimension set
+    (modify-syntax-entry ?\] ")[" syntax-table)
+    (modify-syntax-entry ?\{ "(}" syntax-table) ;dictionary
+    (modify-syntax-entry ?\} "){" syntax-table)
+    ;; All other characters except whitespace, ‘/’ and ‘;’ can be used
+    ;; in words (symbols).  However, the OpenFoam convention is to not
+    ;; use this feature.  Thus, mark most of them as punctuation.
+    (modify-syntax-entry ?!  "." syntax-table)
+    (modify-syntax-entry ?#  "'" syntax-table) ;directive
+    (modify-syntax-entry ?$  "'" syntax-table) ;macro
+    (modify-syntax-entry ?%  "." syntax-table)
+    (modify-syntax-entry ?&  "." syntax-table)
+    (modify-syntax-entry ?\' "." syntax-table)
+    (modify-syntax-entry ?+  "." syntax-table)
+    (modify-syntax-entry ?,  "." syntax-table)
+    (modify-syntax-entry ?-  "." syntax-table)
+    (modify-syntax-entry ?.  "." syntax-table)
+    (modify-syntax-entry ?:  "." syntax-table)
+    (modify-syntax-entry ?\; "." syntax-table)
+    (modify-syntax-entry ?<  "." syntax-table)
+    (modify-syntax-entry ?=  "." syntax-table)
+    (modify-syntax-entry ?>  "." syntax-table)
+    (modify-syntax-entry ??  "." syntax-table)
+    (modify-syntax-entry ?@  "." syntax-table)
+    (modify-syntax-entry ?^  "." syntax-table)
+    (modify-syntax-entry ?_  "." syntax-table)
+    (modify-syntax-entry ?`  "." syntax-table)
+    (modify-syntax-entry ?|  "." syntax-table)
+    (modify-syntax-entry ?~  "." syntax-table)
     syntax-table)
   "Syntax table used in OpenFOAM mode buffers.")
 
