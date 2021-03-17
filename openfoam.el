@@ -398,6 +398,11 @@ CONTENTS is the file contents."
 	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
     directory))
 
+;;;; Indentation
+
+(defvar openfoam-smie-p nil
+  "True means to use SMIE for OpenFOAM mode.")
+
 ;;;; Major Mode
 
 (c-add-style "OpenFOAM"
