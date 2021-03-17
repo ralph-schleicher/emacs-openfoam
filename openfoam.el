@@ -400,8 +400,75 @@ CONTENTS is the file contents."
 
 ;;;; Indentation
 
-(defvar openfoam-smie-p nil
-  "True means to use SMIE for OpenFOAM mode.")
+(defcustom openfoam-basic-offset 4
+  "The indentation increment."
+  :type 'integer
+  :group 'openfoam)
+
+(defun openfoam-smie-after-block-p ()
+  "Return true if point is after the closing ‘}’ character of a dictionary.
+The code assumes that point is not inside a string or comment."
+  (and (eql (char-before) ?\})
+       ;; Not closing a verbatim text.
+       (not (eql (char-before (1- (point))) ?#))
+       ;; Not closing a variable.
+       (not (save-excursion
+	      (ignore-errors
+		(forward-list -1)
+		(and (eql (char-before) ?$)
+		     (eql (char-after) ?\{)))))
+       t))
+
+;; Primitive dictionary entries are terminated by a ‘;’ character but
+;; this may conflict with ‘;’ in C++ code streams.  Thus, use a unique
+;; representation of tokens in SMIE.
+(defconst openfoam-smie-end "\u0000"
+  "End statement token.")
+
+(defun openfoam-smie-forward-token ()
+  "Move forward across the next token."
+  (let ((start (point)))
+    (openfoam-skip-forward)
+    (cond ((eql (char-after) ?\;)
+	   (forward-char 1)
+	   openfoam-smie-end)
+	  ((and (> (point) start)
+		(save-excursion
+		  (goto-char start)
+		  (openfoam-smie-after-block-p)))
+	   openfoam-smie-end)
+	  (t
+	   (smie-default-forward-token)))))
+
+(defun openfoam-smie-backward-token ()
+  "Move backward across the previous token."
+  (let ((start (point)))
+    (openfoam-skip-backward)
+    (cond ((eql (char-before) ?\;)
+	   (forward-char -1)
+	   openfoam-smie-end)
+	  ((and (< (point) start)
+		(openfoam-smie-after-block-p))
+	   openfoam-smie-end)
+	  (t
+	   (smie-default-backward-token)))))
+
+(defconst openfoam-smie-grammar
+  (smie-prec2->grammar
+   (smie-precs->prec2
+    `((assoc ,openfoam-smie-end)))))
+
+(defun openfoam-smie-rules (method arg)
+  (pcase (cons method arg)
+    ('(:elem . basic)
+     openfoam-basic-offset)
+    ('(:elem . arg)
+     0)
+    (`(:list-intro . ,(or openfoam-smie-end ""))
+     t)
+    (`(:after . ,(or "(" "["))
+     (cons 'column (1+ (current-column))))
+    ))
 
 ;;;; Major Mode
 
@@ -527,11 +594,6 @@ Run the ‘c-set-style’ command to change the indentation style."
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
-  ;; See ‘antlr-mode’.
-  (c-initialize-cc-mode)
-  (setq c-buffer-is-cc-mode openfoam-cc-mode)
-  (c-init-language-vars-for openfoam-cc-mode)
-  (c-basic-common-init openfoam-cc-mode openfoam-default-style)
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
@@ -548,6 +610,10 @@ Run the ‘c-set-style’ command to change the indentation style."
 	      parse-sexp-lookup-properties t)
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
+  ;; Indentation.
+  (smie-setup openfoam-smie-grammar 'openfoam-smie-rules
+	      :forward-token 'openfoam-smie-forward-token
+	      :backward-token 'openfoam-smie-backward-token)
   ;; Miscellaneous.
   (setq indent-tabs-mode nil)
   ())
