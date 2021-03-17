@@ -537,6 +537,15 @@ Run the ‘c-set-style’ command to change the indentation style."
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
 	      comment-end-skip nil
 	      comment-end "")
+  ;; Syntax properties.
+  (setq-local syntax-propertize-function
+	      (syntax-propertize-rules
+	       ;; Verbatim text.
+	       ("\\(#\\){"
+		(1 "|"))
+	       ("#\\(}\\)"
+		(2 "|")))
+	      parse-sexp-lookup-properties t)
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Miscellaneous.
