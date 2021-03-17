@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24653 1594 615433
-;;;;;;  888000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24658 24584 311914
+;;;;;;  294000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-apply-data-file-template "openfoam" "\
@@ -21,10 +21,10 @@ for the ‘Code:’ special comment and insert the data file header after
 it.  If ‘Code:’ is not found, insert the data file header before the
 first dictionary entry.
 
-While looking for a suitable buffer position, the special
-variable ‘limit’ is bound to the buffer position specified by
-‘openfoam-insert-data-file-header-line-limit’.  Whether or not
-a hook function obeys this limit is undefined.
+While looking for a suitable buffer position, the special variable
+‘openfoam-insert-data-file-header-limit’ is bound to the buffer position
+specified by ‘openfoam-insert-data-file-header-line-limit’.  Whether or
+not a hook function obeys this limit is undefined.
 
 \(fn &optional HERE)" t nil)
 
