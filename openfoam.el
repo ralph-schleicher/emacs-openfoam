@@ -495,7 +495,28 @@ Run the ‘c-set-style’ command to change the indentation style."
   "Abbreviation table used in OpenFOAM mode buffers.")
 (define-abbrev-table 'openfoam-mode-abbrev-table ())
 
-(defvar openfoam-font-lock-keywords c-font-lock-keywords-1
+(defvar openfoam-font-lock-keywords
+  `(;; Keywords (function entries).
+    ,(concat
+      "\\<"
+      (regexp-opt '("#include"
+		    "#includeIfPresent"
+		    "#includeEtc"
+		    "#includeFunc"
+		    "#remove"
+		    "#inputMode"
+		    "#inputStyle"
+		    "#neg"
+		    "#calc"
+		    "#codeStream"
+		    "#{" "#}"
+		    "#if" "#ifeq" "#else" "#endif") t)
+      "\\>")
+    ;; Macros.
+    ("\\(\\$\\)\\(\\sw*\\(?:\\(?:\\.+\\|:\\)\\sw+\\)*\\)"
+     (1 font-lock-keyword-face)
+     (2 font-lock-variable-name-face nil t))
+    )
   "Default expressions to highlight in OpenFOAM mode buffers.")
 
 ;;;###autoload
