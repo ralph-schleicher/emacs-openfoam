@@ -503,7 +503,6 @@ Run the ‘c-set-style’ command to change the indentation style."
 (defvar openfoam-font-lock-keywords
   `(;; Keywords (function entries).
     ,(concat
-      "\\<"
       (regexp-opt '("#include"
 		    "#includeIfPresent"
 		    "#includeEtc"
@@ -514,9 +513,9 @@ Run the ‘c-set-style’ command to change the indentation style."
 		    "#neg"
 		    "#calc"
 		    "#codeStream"
-		    "#{" "#}"
 		    "#if" "#ifeq" "#else" "#endif") t)
       "\\>")
+    ,(regexp-opt '("#{" "#}"))
     ;; Macros.
     ("\\(\\$\\)\\(\\sw*\\(?:\\(?:\\.+\\|:\\)\\sw+\\)*\\)"
      (1 font-lock-keyword-face)
