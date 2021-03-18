@@ -526,8 +526,10 @@ Run the ‘c-set-style’ command to change the indentation style."
 ;;;###autoload
 (define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
   "Major mode for editing OpenFOAM C++ code."
-  (when (not (null openfoam-default-style))
-    (c-set-style openfoam-default-style)))
+  :after-hook (when (not (null openfoam-default-style))
+		(c-set-style openfoam-default-style))
+  ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
+  (setq indent-tabs-mode nil))
 
 (defcustom openfoam-multiple-major-modes 'polymode
   "The feature providing editing support for multiple major modes.
@@ -535,6 +537,32 @@ A value of ‘nil’ means to treat C++ code as string constants."
   :type '(radio (const :tag "Disable" nil)
 		(const :tag "Polymode" polymode))
   :group 'openfoam)
+
+;; https://polymode.github.io/
+;; https://github.com/polymode/polymode/
+(eval-and-compile
+  (when (package-installed-p 'polymode)
+    (require 'polymode))
+
+  (define-hostmode openfoam-poly-openfoam-hostmode
+    :mode 'openfoam-mode)
+
+  (define-innermode openfoam-poly-openfoam-c++-innermode
+    :mode 'openfoam-c++-mode
+    :allow-nested nil
+    :head-matcher "#{"
+    :head-mode 'host
+    :head-adjust-face nil
+    :tail-matcher "#}"
+    :tail-mode 'host
+    :tail-adjust-face nil
+    :body-indent-offset (lambda () openfoam-basic-offset)
+    :adjust-face nil)
+
+  (define-polymode openfoam-poly-mode
+    :hostmode 'openfoam-poly-openfoam-hostmode
+    :innermodes '(openfoam-poly-openfoam-c++-innermode))
+  ())
 
 ;;;; Major Mode
 
