@@ -438,6 +438,10 @@ The code assumes that point is not inside a string or comment."
 		  (goto-char start)
 		  (openfoam-smie-after-block-p)))
 	   openfoam-smie-end)
+	  ((looking-at "#[{}]")
+	   (goto-char (match-end 0))
+	   (buffer-substring-no-properties
+	    (match-beginning 0) (point)))
 	  (t
 	   (smie-default-forward-token)))))
 
@@ -451,13 +455,20 @@ The code assumes that point is not inside a string or comment."
 	  ((and (< (point) start)
 		(openfoam-smie-after-block-p))
 	   openfoam-smie-end)
+	  ((looking-back "#[{}]")
+	   (goto-char (match-beginning 0))
+	   (buffer-substring-no-properties
+	    (point) (match-end 0)))
 	  (t
 	   (smie-default-backward-token)))))
 
 (defconst openfoam-smie-grammar
   (smie-prec2->grammar
-   (smie-precs->prec2
-    `((assoc ,openfoam-smie-end)))))
+   (smie-bnf->prec2
+    `((entries (entries ,openfoam-smie-end entries)
+	       ("#{" entries "#}")))
+    `((assoc ,openfoam-smie-end))
+    )))
 
 (defun openfoam-smie-rules (method arg)
   (pcase (cons method arg)
