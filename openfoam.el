@@ -41,6 +41,7 @@
 (require 'cl-lib)
 (require 'cc-mode)
 (require 'smie)
+(require 'package)
 
 (defgroup openfoam nil
   "OpenFOAM files and directories."
@@ -470,7 +471,7 @@ The code assumes that point is not inside a string or comment."
      (cons 'column (1+ (current-column))))
     ))
 
-;;;; Major Mode
+;;;; C++ Code
 
 (c-add-style "OpenFOAM"
 	     `((c-basic-offset . 4)
@@ -504,13 +505,27 @@ The code assumes that point is not inside a string or comment."
 		)))
 
 (defcustom openfoam-default-style "OpenFOAM"
-  "Default indentation style for OpenFOAM data files.
+  "Default indentation style for OpenFOAM C++ code.
+A value of ‘nil’ means to not change the indentation style.
 Run the ‘c-set-style’ command to change the indentation style."
-  :type 'string
+  :type '(choice (const :tag "Inherit" nil)
+		 (string :tag "Style"))
   :group 'openfoam)
 
-(defconst openfoam-cc-mode 'c++-mode
-  "Major mode symbol of the underlying CC Mode.")
+;;;###autoload
+(define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
+  "Major mode for editing OpenFOAM C++ code."
+  (when (not (null openfoam-default-style))
+    (c-set-style openfoam-default-style)))
+
+(defcustom openfoam-multiple-major-modes 'polymode
+  "The feature providing editing support for multiple major modes.
+A value of ‘nil’ means to treat C++ code as string constants."
+  :type '(radio (const :tag "Disable" nil)
+		(const :tag "Polymode" polymode))
+  :group 'openfoam)
+
+;;;; Major Mode
 
 (defcustom openfoam-mode-hook nil
   "Hook called by ‘openfoam-mode’."
@@ -594,20 +609,28 @@ Run the ‘c-set-style’ command to change the indentation style."
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
+  (setq-local openfoam-multiple-major-modes
+	      (cl-case (default-value 'openfoam-multiple-major-modes)
+		(polymode
+		 (when (package-installed-p 'polymode)
+		   (require 'polymode)))))
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
 	      comment-end-skip nil
 	      comment-end "")
   ;; Syntax properties.
-  (setq-local syntax-propertize-function
-	      (syntax-propertize-rules
-	       ;; Verbatim text.
-	       ("\\(#\\){"
-		(1 "|"))
-	       ("#\\(}\\)"
-		(2 "|")))
-	      parse-sexp-lookup-properties t)
+  (cl-case openfoam-multiple-major-modes
+    (polymode)
+    (otherwise
+     (setq-local syntax-propertize-function
+		 (syntax-propertize-rules
+		  ;; Verbatim text.
+		  ("\\(#\\){"
+		   (1 "|"))
+		  ("#\\(}\\)"
+		   (2 "|"))))))
+  (setq-local parse-sexp-lookup-properties t)
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
