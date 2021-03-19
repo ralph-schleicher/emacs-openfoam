@@ -4,7 +4,9 @@
 
 ;; Author: Ralph Schleicher <rs@ralph-schleicher.de>
 ;; Keywords: languages
-;; Version: α
+;; Package-Version: @VERSION@
+;; Package-Requires: (polymode)
+;; URL: https://github.com/ralph-schleicher/emacs-openfoam
 
 ;; This file is not part of GNU Emacs.
 
@@ -68,6 +70,12 @@
 	 max)
 	(t
 	 number)))
+
+(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
+  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
+  (if (memq system-type '(windows-nt ms-dos))
+      (cl-equalp file-name-1 file-name-2)
+    (string= file-name-1 file-name-2)))
 
 (defsubst openfoam-skip-forward ()
   "Move forward across comments and whitespace characters.
@@ -216,6 +224,13 @@ Run the ‘c-set-style’ command to change the indentation style."
   ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
   (setq indent-tabs-mode nil))
 
+(defcustom openfoam-multiple-major-modes 'polymode
+  "The feature providing editing support for multiple major modes.
+A value of ‘nil’ means to treat C++ code as string constants."
+  :type '(radio (const :tag "Disable" nil)
+		(const :tag "Polymode" polymode))
+  :group 'openfoam)
+
 ;; https://polymode.github.io/
 (defun openfoam-poly-setup ()
   (unless (featurep 'polymode)
@@ -244,13 +259,6 @@ Run the ‘c-set-style’ command to change the indentation style."
     'polymode))
 
 ;;;; Major Mode
-
-(defcustom openfoam-multiple-major-modes 'polymode
-  "The feature providing editing support for multiple major modes.
-A value of ‘nil’ means to treat C++ code as string constants."
-  :type '(radio (const :tag "Disable" nil)
-		(const :tag "Polymode" polymode))
-  :group 'openfoam)
 
 (defcustom openfoam-mode-hook nil
   "Hook called by ‘openfoam-mode’."
@@ -637,6 +645,17 @@ CONTENTS is the file contents."
 
 ;;;; Case Directories
 
+(defun openfoam-case-directory (file-name-or-directory)
+  "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
+  (let ((directory (file-name-directory file-name-or-directory)))
+    (while (and directory (not (and (file-directory-p
+				     (expand-file-name "constant" directory))
+				    (file-directory-p
+				     (expand-file-name "system" directory)))))
+      (let ((up (file-name-directory (directory-file-name directory))))
+	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
+    directory))
+
 ;;;###autoload
 (defun openfoam-create-case-directory (directory)
   "Create an OpenFOAM case directory."
@@ -670,23 +689,6 @@ CONTENTS is the file contents."
       (create-data-file "system/controlDict")
       (create-data-file "system/fvSchemes")
       (create-data-file "system/fvSolution"))
-    directory))
-
-(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
-  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
-  (if (memq system-type '(windows-nt ms-dos))
-      (cl-equalp file-name-1 file-name-2)
-    (string= file-name-1 file-name-2)))
-
-(defun openfoam-case-directory (file-name-or-directory)
-  "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
-  (let ((directory (file-name-directory file-name-or-directory)))
-    (while (and directory (not (and (file-directory-p
-				     (expand-file-name "constant" directory))
-				    (file-directory-p
-				     (expand-file-name "system" directory)))))
-      (let ((up (file-name-directory (directory-file-name directory))))
-	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
     directory))
 
 (provide 'openfoam)
