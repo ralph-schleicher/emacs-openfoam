@@ -3,9 +3,21 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24659 14021 796894
-;;;;;;  625000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24661 7356 488201
+;;;;;;  264000))
 ;;; Generated autoloads from openfoam.el
+
+(autoload 'openfoam-c++-mode "openfoam" "\
+Major mode for editing OpenFOAM C++ code.
+
+\(fn)" t nil)
+
+(autoload 'openfoam-mode "openfoam" "\
+Major mode for OpenFOAM data files.
+
+\(fn)" t nil)
+
+(defalias '∇-mode 'openfoam-mode)
 
 (autoload 'openfoam-apply-data-file-template "openfoam" "\
 Apply the OpenFOAM data file template to the current buffer.
@@ -32,18 +44,6 @@ not a hook function obeys this limit is undefined.
 Create an OpenFOAM case directory.
 
 \(fn DIRECTORY)" t nil)
-
-(autoload 'openfoam-c++-mode "openfoam" "\
-Major mode for editing OpenFOAM C++ code.
-
-\(fn)" t nil)
-
-(autoload 'openfoam-mode "openfoam" "\
-Major mode for OpenFOAM data files.
-
-\(fn)" t nil)
-
-(defalias '∇-mode 'openfoam-mode)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "openfoam" '("openfoam-")))
 
