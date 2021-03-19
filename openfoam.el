@@ -93,6 +93,250 @@ The code assumes that point is not inside a string or comment."
 		     (eql (char-after) ?\{)))))
        t))
 
+;;;; Indentation for Data Files
+
+(defcustom openfoam-basic-offset 4
+  "The indentation increment."
+  :type 'integer
+  :group 'openfoam)
+
+;; Primitive dictionary entries are terminated by a ‘;’ character but
+;; this may conflict with ‘;’ in C++ code streams.  Thus, use a unique
+;; representation of tokens in SMIE.
+(defconst openfoam-smie-end "\u0000"
+  "End statement token.")
+
+(defun openfoam-smie-forward-token ()
+  "Move forward across the next token."
+  (let ((start (point)))
+    (openfoam-skip-forward)
+    (cond ((eql (char-after) ?\;)
+	   (forward-char 1)
+	   openfoam-smie-end)
+	  ((and (> (point) start)
+		(save-excursion
+		  (goto-char start)
+		  (openfoam-after-block-p)))
+	   openfoam-smie-end)
+	  ((looking-at "#[{}]")
+	   (goto-char (match-end 0))
+	   (buffer-substring-no-properties
+	    (match-beginning 0) (point)))
+	  (t
+	   (smie-default-forward-token)))))
+
+(defun openfoam-smie-backward-token ()
+  "Move backward across the previous token."
+  (let ((start (point)))
+    (openfoam-skip-backward)
+    (cond ((eql (char-before) ?\;)
+	   (forward-char -1)
+	   openfoam-smie-end)
+	  ((and (< (point) start)
+		(openfoam-after-block-p))
+	   openfoam-smie-end)
+	  ((looking-back "#[{}]" (- (point) 2))
+	   (goto-char (match-beginning 0))
+	   (buffer-substring-no-properties
+	    (point) (match-end 0)))
+	  (t
+	   (smie-default-backward-token)))))
+
+(defconst openfoam-smie-grammar
+  (smie-prec2->grammar
+   (smie-bnf->prec2
+    `((entries (entries ,openfoam-smie-end entries)
+	       ("#{" entries "#}")))
+    `((assoc ,openfoam-smie-end))
+    )))
+
+(defun openfoam-smie-rules (method arg)
+  (pcase (cons method arg)
+    ('(:elem . basic)
+     openfoam-basic-offset)
+    ('(:elem . arg)
+     0)
+    (`(:list-intro . ,(or openfoam-smie-end ""))
+     t)
+    (`(:after . ,(or "(" "["))
+     (cons 'column (1+ (current-column))))
+    ))
+
+;;;; C++ Code
+
+(c-add-style "OpenFOAM"
+	     `((c-basic-offset . 4)
+	       (c-tab-always-indent . t)
+	       (c-comment-only-line-offset . (0 . 0))
+	       (c-indent-comments-syntactically-p . t)
+	       (c-block-comments-indent-p nil)
+	       (c-cleanup-list . (defun-close-semi list-close-comma scope-operator))
+	       (c-backslash-column . 78)
+	       ;; See ‘(c-set-stylevar-fallback 'c-offsets-alist ...)’
+	       ;; in file ‘cc-vars.el’.
+	       (c-offsets-alist
+		(c . +)
+		(topmost-intro . 0)
+		(topmost-intro-cont . 0)
+		(member-init-intro . +)
+		(member-init-cont . 0)
+		(inher-intro . 0)
+		(inher-cont . +)
+		(substatement . +)
+		(substatement-open . 0)
+		(case-label . +)
+		(label . -)
+		(comment-intro . 0)
+		(arglist-intro . +)
+		(arglist-cont . 0)
+		(arglist-cont-nonempty . 0)
+		(arglist-close . 0)
+		(stream-op . +)
+		(cpp-macro . c-lineup-cpp-define)
+		)))
+
+(defcustom openfoam-c++-style "OpenFOAM"
+  "Default indentation style for OpenFOAM C++ code.
+A value of ‘nil’ means to not change the indentation style.
+Run the ‘c-set-style’ command to change the indentation style."
+  :type '(choice (const :tag "Inherit" nil)
+		 (string :tag "Style"))
+  :group 'openfoam)
+
+;;;###autoload
+(define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
+  "Major mode for editing OpenFOAM C++ code."
+  :after-hook (when (not (null openfoam-c++-style))
+		(c-set-style openfoam-c++-style))
+  ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
+  (setq indent-tabs-mode nil))
+
+;;;; Major Mode
+
+(defcustom openfoam-mode-hook nil
+  "Hook called by ‘openfoam-mode’."
+  :type 'hook
+  :group 'openfoam)
+
+(defvar openfoam-mode-syntax-table
+  (let ((syntax-table (make-syntax-table)))
+    ;; String constants.
+    (modify-syntax-entry ?\" "\"" syntax-table)
+    (modify-syntax-entry ?\\ "\\" syntax-table)
+    ;; Comments.  The primary comment style is a C++ line comment and
+    ;; the secondary comment style is a C block comment.
+    (modify-syntax-entry ?/  ". 124" syntax-table)
+    (modify-syntax-entry ?*  ". 23b" syntax-table)
+    (modify-syntax-entry ?\n ">"     syntax-table)
+    (modify-syntax-entry ?\r ">"     syntax-table)
+    ;; Dissimilar pairs.
+    (modify-syntax-entry ?\( "()" syntax-table) ;list
+    (modify-syntax-entry ?\) ")(" syntax-table)
+    (modify-syntax-entry ?\[ "(]" syntax-table) ;dimension set
+    (modify-syntax-entry ?\] ")[" syntax-table)
+    (modify-syntax-entry ?\{ "(}" syntax-table) ;dictionary
+    (modify-syntax-entry ?\} "){" syntax-table)
+    ;; All other characters except whitespace, ‘/’ and ‘;’ can be used
+    ;; in words (symbols).  However, the OpenFoam convention is to not
+    ;; use this feature.  Thus, mark most of them as punctuation.
+    (modify-syntax-entry ?!  "." syntax-table)
+    (modify-syntax-entry ?#  "'" syntax-table) ;directive
+    (modify-syntax-entry ?$  "'" syntax-table) ;macro
+    (modify-syntax-entry ?%  "." syntax-table)
+    (modify-syntax-entry ?&  "." syntax-table)
+    (modify-syntax-entry ?\' "." syntax-table)
+    (modify-syntax-entry ?+  "." syntax-table)
+    (modify-syntax-entry ?,  "." syntax-table)
+    (modify-syntax-entry ?-  "." syntax-table)
+    (modify-syntax-entry ?.  "." syntax-table)
+    (modify-syntax-entry ?:  "." syntax-table)
+    (modify-syntax-entry ?\; "." syntax-table)
+    (modify-syntax-entry ?<  "." syntax-table)
+    (modify-syntax-entry ?=  "." syntax-table)
+    (modify-syntax-entry ?>  "." syntax-table)
+    (modify-syntax-entry ??  "." syntax-table)
+    (modify-syntax-entry ?@  "." syntax-table)
+    (modify-syntax-entry ?^  "." syntax-table)
+    (modify-syntax-entry ?_  "." syntax-table)
+    (modify-syntax-entry ?`  "." syntax-table)
+    (modify-syntax-entry ?|  "." syntax-table)
+    (modify-syntax-entry ?~  "." syntax-table)
+    syntax-table)
+  "Syntax table used in OpenFOAM mode buffers.")
+
+(defvar openfoam-mode-abbrev-table nil
+  "Abbreviation table used in OpenFOAM mode buffers.")
+(define-abbrev-table 'openfoam-mode-abbrev-table ())
+
+(defvar openfoam-font-lock-keywords
+  `(;; Keywords (function entries).
+    ,(concat
+      (regexp-opt '("#include"
+		    "#includeIfPresent"
+		    "#includeEtc"
+		    "#includeFunc"
+		    "#remove"
+		    "#inputMode"
+		    "#inputStyle"
+		    "#neg"
+		    "#calc"
+		    "#codeStream"
+		    "#if" "#ifeq" "#else" "#endif") t)
+      "\\>")
+    ,(regexp-opt '("#{" "#}"))
+    ;; Macros.
+    ("\\(\\$\\)\\(\\sw*\\(?:\\(?:\\.+\\|:\\)\\sw+\\)*\\)"
+     (1 font-lock-keyword-face)
+     (2 font-lock-variable-name-face nil t))
+    )
+  "Default expressions to highlight in OpenFOAM mode buffers.")
+
+;;;###autoload
+(define-derived-mode openfoam-mode prog-mode "OpenFOAM"
+  "Major mode for OpenFOAM data files."
+  :group 'openfoam
+  ;; C++ comment style.
+  (setq-local comment-start "//"
+	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
+	      comment-end-skip nil
+	      comment-end "")
+  ;; Syntax highlighting.
+  (setq font-lock-defaults '(openfoam-font-lock-keywords))
+  ;; Indentation.
+  (smie-setup openfoam-smie-grammar 'openfoam-smie-rules
+	      :forward-token 'openfoam-smie-forward-token
+	      :backward-token 'openfoam-smie-backward-token)
+  ;; Miscellaneous.
+  (setq indent-tabs-mode nil)
+  ())
+
+;; https://polymode.github.io/
+;; https://github.com/polymode/polymode/
+(define-hostmode openfoam-poly-hostmode
+  :mode 'openfoam-mode)
+
+(define-innermode openfoam-poly-c++-innermode
+  :mode 'openfoam-c++-mode
+  :allow-nested nil
+  :head-matcher "#{"
+  :head-mode 'host
+  :head-adjust-face nil
+  :tail-matcher "#}"
+  :tail-mode 'host
+  :tail-adjust-face nil
+  :body-indent-offset (lambda () openfoam-basic-offset)
+  :adjust-face nil)
+
+;;;###autoload
+(define-polymode openfoam-poly-mode
+  :hostmode 'openfoam-poly-hostmode
+  :innermodes '(openfoam-poly-c++-innermode)
+  :keymap openfoam-mode-map
+  :lighter "")
+
+;;;###autoload
+(defalias '∇-mode 'openfoam-mode)
+
 ;;;; Data Files
 
 (defcustom openfoam-data-file-template "\
@@ -412,250 +656,6 @@ CONTENTS is the file contents."
       (let ((up (file-name-directory (directory-file-name directory))))
 	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
     directory))
-
-;;;; Indentation
-
-(defcustom openfoam-basic-offset 4
-  "The indentation increment."
-  :type 'integer
-  :group 'openfoam)
-
-;; Primitive dictionary entries are terminated by a ‘;’ character but
-;; this may conflict with ‘;’ in C++ code streams.  Thus, use a unique
-;; representation of tokens in SMIE.
-(defconst openfoam-smie-end "\u0000"
-  "End statement token.")
-
-(defun openfoam-smie-forward-token ()
-  "Move forward across the next token."
-  (let ((start (point)))
-    (openfoam-skip-forward)
-    (cond ((eql (char-after) ?\;)
-	   (forward-char 1)
-	   openfoam-smie-end)
-	  ((and (> (point) start)
-		(save-excursion
-		  (goto-char start)
-		  (openfoam-after-block-p)))
-	   openfoam-smie-end)
-	  ((looking-at "#[{}]")
-	   (goto-char (match-end 0))
-	   (buffer-substring-no-properties
-	    (match-beginning 0) (point)))
-	  (t
-	   (smie-default-forward-token)))))
-
-(defun openfoam-smie-backward-token ()
-  "Move backward across the previous token."
-  (let ((start (point)))
-    (openfoam-skip-backward)
-    (cond ((eql (char-before) ?\;)
-	   (forward-char -1)
-	   openfoam-smie-end)
-	  ((and (< (point) start)
-		(openfoam-after-block-p))
-	   openfoam-smie-end)
-	  ((looking-back "#[{}]" (- (point) 2))
-	   (goto-char (match-beginning 0))
-	   (buffer-substring-no-properties
-	    (point) (match-end 0)))
-	  (t
-	   (smie-default-backward-token)))))
-
-(defconst openfoam-smie-grammar
-  (smie-prec2->grammar
-   (smie-bnf->prec2
-    `((entries (entries ,openfoam-smie-end entries)
-	       ("#{" entries "#}")))
-    `((assoc ,openfoam-smie-end))
-    )))
-
-(defun openfoam-smie-rules (method arg)
-  (pcase (cons method arg)
-    ('(:elem . basic)
-     openfoam-basic-offset)
-    ('(:elem . arg)
-     0)
-    (`(:list-intro . ,(or openfoam-smie-end ""))
-     t)
-    (`(:after . ,(or "(" "["))
-     (cons 'column (1+ (current-column))))
-    ))
-
-;;;; C++ Code
-
-(c-add-style "OpenFOAM"
-	     `((c-basic-offset . 4)
-	       (c-tab-always-indent . t)
-	       (c-comment-only-line-offset . (0 . 0))
-	       (c-indent-comments-syntactically-p . t)
-	       (c-block-comments-indent-p nil)
-	       (c-cleanup-list . (defun-close-semi list-close-comma scope-operator))
-	       (c-backslash-column . 78)
-	       ;; See ‘(c-set-stylevar-fallback 'c-offsets-alist ...)’
-	       ;; in file ‘cc-vars.el’.
-	       (c-offsets-alist
-		(c . +)
-		(topmost-intro . 0)
-		(topmost-intro-cont . 0)
-		(member-init-intro . +)
-		(member-init-cont . 0)
-		(inher-intro . 0)
-		(inher-cont . +)
-		(substatement . +)
-		(substatement-open . 0)
-		(case-label . +)
-		(label . -)
-		(comment-intro . 0)
-		(arglist-intro . +)
-		(arglist-cont . 0)
-		(arglist-cont-nonempty . 0)
-		(arglist-close . 0)
-		(stream-op . +)
-		(cpp-macro . c-lineup-cpp-define)
-		)))
-
-(defcustom openfoam-c++-style "OpenFOAM"
-  "Default indentation style for OpenFOAM C++ code.
-A value of ‘nil’ means to not change the indentation style.
-Run the ‘c-set-style’ command to change the indentation style."
-  :type '(choice (const :tag "Inherit" nil)
-		 (string :tag "Style"))
-  :group 'openfoam)
-
-;;;###autoload
-(define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
-  "Major mode for editing OpenFOAM C++ code."
-  :after-hook (when (not (null openfoam-c++-style))
-		(c-set-style openfoam-c++-style))
-  ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
-  (setq indent-tabs-mode nil))
-
-;;;; Major Mode
-
-(defcustom openfoam-mode-hook nil
-  "Hook called by ‘openfoam-mode’."
-  :type 'hook
-  :group 'openfoam)
-
-(defvar openfoam-mode-syntax-table
-  (let ((syntax-table (make-syntax-table)))
-    ;; String constants.
-    (modify-syntax-entry ?\" "\"" syntax-table)
-    (modify-syntax-entry ?\\ "\\" syntax-table)
-    ;; Comments.  The primary comment style is a C++ line comment and
-    ;; the secondary comment style is a C block comment.
-    (modify-syntax-entry ?/  ". 124" syntax-table)
-    (modify-syntax-entry ?*  ". 23b" syntax-table)
-    (modify-syntax-entry ?\n ">"     syntax-table)
-    (modify-syntax-entry ?\r ">"     syntax-table)
-    ;; Dissimilar pairs.
-    (modify-syntax-entry ?\( "()" syntax-table) ;list
-    (modify-syntax-entry ?\) ")(" syntax-table)
-    (modify-syntax-entry ?\[ "(]" syntax-table) ;dimension set
-    (modify-syntax-entry ?\] ")[" syntax-table)
-    (modify-syntax-entry ?\{ "(}" syntax-table) ;dictionary
-    (modify-syntax-entry ?\} "){" syntax-table)
-    ;; All other characters except whitespace, ‘/’ and ‘;’ can be used
-    ;; in words (symbols).  However, the OpenFoam convention is to not
-    ;; use this feature.  Thus, mark most of them as punctuation.
-    (modify-syntax-entry ?!  "." syntax-table)
-    (modify-syntax-entry ?#  "'" syntax-table) ;directive
-    (modify-syntax-entry ?$  "'" syntax-table) ;macro
-    (modify-syntax-entry ?%  "." syntax-table)
-    (modify-syntax-entry ?&  "." syntax-table)
-    (modify-syntax-entry ?\' "." syntax-table)
-    (modify-syntax-entry ?+  "." syntax-table)
-    (modify-syntax-entry ?,  "." syntax-table)
-    (modify-syntax-entry ?-  "." syntax-table)
-    (modify-syntax-entry ?.  "." syntax-table)
-    (modify-syntax-entry ?:  "." syntax-table)
-    (modify-syntax-entry ?\; "." syntax-table)
-    (modify-syntax-entry ?<  "." syntax-table)
-    (modify-syntax-entry ?=  "." syntax-table)
-    (modify-syntax-entry ?>  "." syntax-table)
-    (modify-syntax-entry ??  "." syntax-table)
-    (modify-syntax-entry ?@  "." syntax-table)
-    (modify-syntax-entry ?^  "." syntax-table)
-    (modify-syntax-entry ?_  "." syntax-table)
-    (modify-syntax-entry ?`  "." syntax-table)
-    (modify-syntax-entry ?|  "." syntax-table)
-    (modify-syntax-entry ?~  "." syntax-table)
-    syntax-table)
-  "Syntax table used in OpenFOAM mode buffers.")
-
-(defvar openfoam-mode-abbrev-table nil
-  "Abbreviation table used in OpenFOAM mode buffers.")
-(define-abbrev-table 'openfoam-mode-abbrev-table ())
-
-(defvar openfoam-font-lock-keywords
-  `(;; Keywords (function entries).
-    ,(concat
-      (regexp-opt '("#include"
-		    "#includeIfPresent"
-		    "#includeEtc"
-		    "#includeFunc"
-		    "#remove"
-		    "#inputMode"
-		    "#inputStyle"
-		    "#neg"
-		    "#calc"
-		    "#codeStream"
-		    "#if" "#ifeq" "#else" "#endif") t)
-      "\\>")
-    ,(regexp-opt '("#{" "#}"))
-    ;; Macros.
-    ("\\(\\$\\)\\(\\sw*\\(?:\\(?:\\.+\\|:\\)\\sw+\\)*\\)"
-     (1 font-lock-keyword-face)
-     (2 font-lock-variable-name-face nil t))
-    )
-  "Default expressions to highlight in OpenFOAM mode buffers.")
-
-;;;###autoload
-(define-derived-mode openfoam-mode prog-mode "OpenFOAM"
-  "Major mode for OpenFOAM data files."
-  :group 'openfoam
-  ;; C++ comment style.
-  (setq-local comment-start "//"
-	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
-	      comment-end-skip nil
-	      comment-end "")
-  ;; Syntax highlighting.
-  (setq font-lock-defaults '(openfoam-font-lock-keywords))
-  ;; Indentation.
-  (smie-setup openfoam-smie-grammar 'openfoam-smie-rules
-	      :forward-token 'openfoam-smie-forward-token
-	      :backward-token 'openfoam-smie-backward-token)
-  ;; Miscellaneous.
-  (setq indent-tabs-mode nil)
-  ())
-
-;; https://polymode.github.io/
-;; https://github.com/polymode/polymode/
-(define-hostmode openfoam-poly-hostmode
-  :mode 'openfoam-mode)
-
-(define-innermode openfoam-poly-c++-innermode
-  :mode 'openfoam-c++-mode
-  :allow-nested nil
-  :head-matcher "#{"
-  :head-mode 'host
-  :head-adjust-face nil
-  :tail-matcher "#}"
-  :tail-mode 'host
-  :tail-adjust-face nil
-  :body-indent-offset (lambda () openfoam-basic-offset)
-  :adjust-face nil)
-
-;;;###autoload
-(define-polymode openfoam-poly-mode
-  :hostmode 'openfoam-poly-hostmode
-  :innermodes '(openfoam-poly-c++-innermode)
-  :keymap openfoam-mode-map
-  :lighter "")
-
-;;;###autoload
-(defalias '∇-mode 'openfoam-mode)
 
 (provide 'openfoam)
 
