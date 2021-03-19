@@ -39,9 +39,9 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'cc-mode)
 (require 'smie)
-(require 'polymode)
+(require 'cc-mode)
+(require 'package)
 
 (defgroup openfoam nil
   "OpenFOAM files and directories."
@@ -101,10 +101,32 @@ The code assumes that point is not inside a string or comment."
   :group 'openfoam)
 
 ;; Primitive dictionary entries are terminated by a ‘;’ character but
-;; this may conflict with ‘;’ in C++ code streams.  Thus, use a unique
+;; this may conflict with ‘;’ in verbatim text.  Thus, use a unique
 ;; representation of tokens in SMIE.
-(defconst openfoam-smie-end "\u0000"
+(defconst openfoam-smie-end ";"
   "End statement token.")
+
+(defconst openfoam-smie-grammar
+  (smie-prec2->grammar
+   (smie-bnf->prec2
+    ;; These rules are required to recognize ‘#{’ and ‘#}’ as opening
+    ;; token and closing token respectively.
+    `((entries (entries ,openfoam-smie-end entries)
+	       ("#{" entries "#}")))
+    `((assoc ,openfoam-smie-end))
+    )))
+
+(defun openfoam-smie-rules (method arg)
+  (pcase (cons method arg)
+    ('(:elem . basic)
+     openfoam-basic-offset)
+    ('(:elem . arg)
+     0)
+    (`(:list-intro . ,(or openfoam-smie-end ""))
+     t)
+    (`(:after . ,(or "(" "["))
+     (cons 'column (1+ (current-column))))
+    ))
 
 (defun openfoam-smie-forward-token ()
   "Move forward across the next token."
@@ -141,26 +163,6 @@ The code assumes that point is not inside a string or comment."
 	    (point) (match-end 0)))
 	  (t
 	   (smie-default-backward-token)))))
-
-(defconst openfoam-smie-grammar
-  (smie-prec2->grammar
-   (smie-bnf->prec2
-    `((entries (entries ,openfoam-smie-end entries)
-	       ("#{" entries "#}")))
-    `((assoc ,openfoam-smie-end))
-    )))
-
-(defun openfoam-smie-rules (method arg)
-  (pcase (cons method arg)
-    ('(:elem . basic)
-     openfoam-basic-offset)
-    ('(:elem . arg)
-     0)
-    (`(:list-intro . ,(or openfoam-smie-end ""))
-     t)
-    (`(:after . ,(or "(" "["))
-     (cons 'column (1+ (current-column))))
-    ))
 
 ;;;; C++ Code
 
@@ -206,12 +208,49 @@ Run the ‘c-set-style’ command to change the indentation style."
 ;;;###autoload
 (define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
   "Major mode for editing OpenFOAM C++ code."
+  :group 'openfoam
+  :syntax-table nil
+  :abbrev-table nil
   :after-hook (when (not (null openfoam-c++-style))
 		(c-set-style openfoam-c++-style))
   ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
   (setq indent-tabs-mode nil))
 
+;; https://polymode.github.io/
+(defun openfoam-poly-setup ()
+  (unless (featurep 'polymode)
+    (when (package-installed-p 'polymode)
+      (require' polymode)))
+  (when (featurep 'polymode)
+    (unless (boundp 'openfoam-poly-c++-innermode)
+      (define-innermode openfoam-poly-c++-innermode
+	:mode 'openfoam-c++-mode
+	:allow-nested nil
+	:head-matcher "#{"
+	:head-mode 'host
+	:head-adjust-face nil
+	:tail-matcher "#}"
+	:tail-mode 'host
+	:tail-adjust-face nil
+	:body-indent-offset (lambda () openfoam-basic-offset)
+	:adjust-face nil))
+    (unless (boundp 'openfoam-poly-mode)
+      (define-polymode openfoam-poly-mode nil
+	"Minor mode for editing C++ code in OpenFOAM data file buffers."
+	:hostmode nil
+	:innermodes '(openfoam-poly-c++-innermode)
+	:keymap (make-sparse-keymap)
+	:lighter ""))
+    'polymode))
+
 ;;;; Major Mode
+
+(defcustom openfoam-multiple-major-modes 'polymode
+  "The feature providing editing support for multiple major modes.
+A value of ‘nil’ means to treat C++ code as string constants."
+  :type '(radio (const :tag "Disable" nil)
+		(const :tag "Polymode" polymode))
+  :group 'openfoam)
 
 (defcustom openfoam-mode-hook nil
   "Hook called by ‘openfoam-mode’."
@@ -295,11 +334,28 @@ Run the ‘c-set-style’ command to change the indentation style."
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
+  (setq-local openfoam-multiple-major-modes
+	      (cl-case (default-value 'openfoam-multiple-major-modes)
+		(polymode
+		 (openfoam-poly-setup))))
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
 	      comment-end-skip nil
 	      comment-end "")
+  ;; Syntax properties.
+  (cl-case openfoam-multiple-major-modes
+    (polymode
+     (openfoam-poly-mode))
+    (otherwise
+     (setq-local syntax-propertize-function
+		 (syntax-propertize-rules
+		  ;; Verbatim text.
+		  ("\\(#\\){"
+		   (1 "|"))
+		  ("#\\(}\\)"
+		   (1 "|"))))))
+  (setq-local parse-sexp-lookup-properties t)
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
@@ -309,30 +365,6 @@ Run the ‘c-set-style’ command to change the indentation style."
   ;; Miscellaneous.
   (setq indent-tabs-mode nil)
   ())
-
-;; https://polymode.github.io/
-;; https://github.com/polymode/polymode/
-(define-hostmode openfoam-poly-hostmode
-  :mode 'openfoam-mode)
-
-(define-innermode openfoam-poly-c++-innermode
-  :mode 'openfoam-c++-mode
-  :allow-nested nil
-  :head-matcher "#{"
-  :head-mode 'host
-  :head-adjust-face nil
-  :tail-matcher "#}"
-  :tail-mode 'host
-  :tail-adjust-face nil
-  :body-indent-offset (lambda () openfoam-basic-offset)
-  :adjust-face nil)
-
-;;;###autoload
-(define-polymode openfoam-poly-mode
-  :hostmode 'openfoam-poly-hostmode
-  :innermodes '(openfoam-poly-c++-innermode)
-  :keymap openfoam-mode-map
-  :lighter "")
 
 ;;;###autoload
 (defalias '∇-mode 'openfoam-mode)
