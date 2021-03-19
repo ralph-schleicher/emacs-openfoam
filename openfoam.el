@@ -41,7 +41,7 @@
 (require 'cl-lib)
 (require 'cc-mode)
 (require 'smie)
-(require 'package)
+(require 'polymode)
 
 (defgroup openfoam nil
   "OpenFOAM files and directories."
@@ -455,7 +455,7 @@ The code assumes that point is not inside a string or comment."
 	  ((and (< (point) start)
 		(openfoam-smie-after-block-p))
 	   openfoam-smie-end)
-	  ((looking-back "#[{}]")
+	  ((looking-back "#[{}]" (- (point) 2))
 	   (goto-char (match-beginning 0))
 	   (buffer-substring-no-properties
 	    (point) (match-end 0)))
@@ -530,39 +530,6 @@ Run the ‘c-set-style’ command to change the indentation style."
 		(c-set-style openfoam-default-style))
   ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
   (setq indent-tabs-mode nil))
-
-(defcustom openfoam-multiple-major-modes 'polymode
-  "The feature providing editing support for multiple major modes.
-A value of ‘nil’ means to treat C++ code as string constants."
-  :type '(radio (const :tag "Disable" nil)
-		(const :tag "Polymode" polymode))
-  :group 'openfoam)
-
-;; https://polymode.github.io/
-;; https://github.com/polymode/polymode/
-(eval-and-compile
-  (when (package-installed-p 'polymode)
-    (require 'polymode))
-
-  (define-hostmode openfoam-poly-openfoam-hostmode
-    :mode 'openfoam-mode)
-
-  (define-innermode openfoam-poly-openfoam-c++-innermode
-    :mode 'openfoam-c++-mode
-    :allow-nested nil
-    :head-matcher "#{"
-    :head-mode 'host
-    :head-adjust-face nil
-    :tail-matcher "#}"
-    :tail-mode 'host
-    :tail-adjust-face nil
-    :body-indent-offset (lambda () openfoam-basic-offset)
-    :adjust-face nil)
-
-  (define-polymode openfoam-poly-mode
-    :hostmode 'openfoam-poly-openfoam-hostmode
-    :innermodes '(openfoam-poly-openfoam-c++-innermode))
-  ())
 
 ;;;; Major Mode
 
@@ -648,28 +615,11 @@ A value of ‘nil’ means to treat C++ code as string constants."
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
-  (setq-local openfoam-multiple-major-modes
-	      (cl-case (default-value 'openfoam-multiple-major-modes)
-		(polymode
-		 (when (package-installed-p 'polymode)
-		   (require 'polymode)))))
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
 	      comment-end-skip nil
 	      comment-end "")
-  ;; Syntax properties.
-  (cl-case openfoam-multiple-major-modes
-    (polymode)
-    (otherwise
-     (setq-local syntax-propertize-function
-		 (syntax-propertize-rules
-		  ;; Verbatim text.
-		  ("\\(#\\){"
-		   (1 "|"))
-		  ("#\\(}\\)"
-		   (2 "|"))))))
-  (setq-local parse-sexp-lookup-properties t)
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
@@ -679,6 +629,30 @@ A value of ‘nil’ means to treat C++ code as string constants."
   ;; Miscellaneous.
   (setq indent-tabs-mode nil)
   ())
+
+;; https://polymode.github.io/
+;; https://github.com/polymode/polymode/
+(define-hostmode openfoam-poly-hostmode
+  :mode 'openfoam-mode)
+
+(define-innermode openfoam-poly-c++-innermode
+  :mode 'openfoam-c++-mode
+  :allow-nested nil
+  :head-matcher "#{"
+  :head-mode 'host
+  :head-adjust-face nil
+  :tail-matcher "#}"
+  :tail-mode 'host
+  :tail-adjust-face nil
+  :body-indent-offset (lambda () openfoam-basic-offset)
+  :adjust-face nil)
+
+;;;###autoload
+(define-polymode openfoam-poly-mode
+  :hostmode 'openfoam-poly-hostmode
+  :innermodes '(openfoam-poly-c++-innermode)
+  :keymap openfoam-mode-map
+  :lighter "")
 
 ;;;###autoload
 (defalias '∇-mode 'openfoam-mode)
