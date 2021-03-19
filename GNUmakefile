@@ -22,22 +22,20 @@
 ## Code:
 
 PACKAGE = openfoam
-VERSION = α
+VERSION = 0.1
 
 ### Rules
 
-%: %.in
+.PHONY: all
+all: openfoam-pkg.el autoloads
+
+openfoam-pkg.el: openfoam-pkg.el.in
 	sed -e 's/@PACKAGE@/$(PACKAGE)/g' \
 	    -e 's/@VERSION@/$(VERSION)/g' $< > $@~ && mv -f $@~ $@
 
-%.html: %.md
-	markdown $< > $@~ && mv -f $@~ $@
-
-.PHONY: all
-all: autoloads
-
 .PHONY: clean
 clean:
+	rm -f openfoam-pkg.el
 	rm -f *.elc
 
 .PHONY: check
@@ -45,6 +43,17 @@ check: all
 	emacs --batch --funcall batch-byte-compile openfoam.el
 
 ### Maintenance
+
+dist_FILES = openfoam.el openfoam-pkg.el init.el
+
+.PHONY: dist
+dist: $(PACKAGE)-$(VERSION).tar
+$(PACKAGE)-$(VERSION).tar: check $(dist_FILES)
+	rm -fr $(PACKAGE)-$(VERSION)
+	mkdir $(PACKAGE)-$(VERSION)
+	install -c -m 644 $(dist_FILES) $(PACKAGE)-$(VERSION)
+	rm -f $(PACKAGE)-$(VERSION).tar
+	tar -cf $(PACKAGE)-$(VERSION).tar $(PACKAGE)-$(VERSION)
 
 .PHONY: autoloads
 autoloads: openfoam-autoloads.el
