@@ -79,6 +79,20 @@ Leave point where scanning stops."
 Leave point where scanning stops."
   (forward-comment (- (point))))
 
+(defun openfoam-after-block-p ()
+  "Return true if point is after the closing ‘}’ character of a dictionary.
+The code assumes that point is not inside a string or comment."
+  (and (eql (char-before) ?\})
+       ;; Not closing a verbatim text.
+       (not (eql (char-before (1- (point))) ?#))
+       ;; Not closing a variable.
+       (not (save-excursion
+	      (ignore-errors
+		(forward-list -1)
+		(and (eql (char-before) ?$)
+		     (eql (char-after) ?\{)))))
+       t))
+
 ;;;; Data Files
 
 (defcustom openfoam-data-file-template "\
@@ -406,20 +420,6 @@ CONTENTS is the file contents."
   :type 'integer
   :group 'openfoam)
 
-(defun openfoam-smie-after-block-p ()
-  "Return true if point is after the closing ‘}’ character of a dictionary.
-The code assumes that point is not inside a string or comment."
-  (and (eql (char-before) ?\})
-       ;; Not closing a verbatim text.
-       (not (eql (char-before (1- (point))) ?#))
-       ;; Not closing a variable.
-       (not (save-excursion
-	      (ignore-errors
-		(forward-list -1)
-		(and (eql (char-before) ?$)
-		     (eql (char-after) ?\{)))))
-       t))
-
 ;; Primitive dictionary entries are terminated by a ‘;’ character but
 ;; this may conflict with ‘;’ in C++ code streams.  Thus, use a unique
 ;; representation of tokens in SMIE.
@@ -436,7 +436,7 @@ The code assumes that point is not inside a string or comment."
 	  ((and (> (point) start)
 		(save-excursion
 		  (goto-char start)
-		  (openfoam-smie-after-block-p)))
+		  (openfoam-after-block-p)))
 	   openfoam-smie-end)
 	  ((looking-at "#[{}]")
 	   (goto-char (match-end 0))
@@ -453,7 +453,7 @@ The code assumes that point is not inside a string or comment."
 	   (forward-char -1)
 	   openfoam-smie-end)
 	  ((and (< (point) start)
-		(openfoam-smie-after-block-p))
+		(openfoam-after-block-p))
 	   openfoam-smie-end)
 	  ((looking-back "#[{}]" (- (point) 2))
 	   (goto-char (match-beginning 0))
@@ -515,7 +515,7 @@ The code assumes that point is not inside a string or comment."
 		(cpp-macro . c-lineup-cpp-define)
 		)))
 
-(defcustom openfoam-default-style "OpenFOAM"
+(defcustom openfoam-c++-style "OpenFOAM"
   "Default indentation style for OpenFOAM C++ code.
 A value of ‘nil’ means to not change the indentation style.
 Run the ‘c-set-style’ command to change the indentation style."
@@ -526,8 +526,8 @@ Run the ‘c-set-style’ command to change the indentation style."
 ;;;###autoload
 (define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
   "Major mode for editing OpenFOAM C++ code."
-  :after-hook (when (not (null openfoam-default-style))
-		(c-set-style openfoam-default-style))
+  :after-hook (when (not (null openfoam-c++-style))
+		(c-set-style openfoam-c++-style))
   ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
   (setq indent-tabs-mode nil))
 
