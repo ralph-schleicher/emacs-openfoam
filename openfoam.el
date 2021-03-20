@@ -200,7 +200,7 @@ The code assumes that point is not inside a string or comment."
 		(arglist-cont . 0)
 		(arglist-cont-nonempty . 0)
 		(arglist-close . 0)
-		(stream-op . +)
+		(stream-op . 0)
 		(cpp-macro . c-lineup-cpp-define)
 		)))
 
