@@ -106,8 +106,10 @@ The code assumes that point is not inside a string or comment."
   :group 'openfoam)
 
 ;; Primitive dictionary entries are terminated by a ‘;’ character but
-;; this may conflict with ‘;’ in verbatim text.  Thus, use a unique
-;; representation of tokens in SMIE.
+;; this may conflict with ‘;’ in verbatim text.  However, verbatim
+;; text is mainly used for C++ code and SMIE does a quite good job
+;; here, too.  Thus, indenting verbatim text like dictionary entries
+;; makes sense -- and it is the simplest solution.
 (defconst openfoam-smie-end ";"
   "End statement token.")
 
