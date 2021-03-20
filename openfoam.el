@@ -225,8 +225,13 @@ Run the ‘c-set-style’ command to change the indentation style."
 
 (defcustom openfoam-multiple-major-modes 'polymode
   "The feature providing editing support for multiple major modes.
-A value of ‘nil’ means to treat C++ code as string constants."
+Multiple major modes means how to indent and fontify C++ code inside
+verbatim text blocks.  A value of ‘nil’ means to use the indentation
+style of OpenFOAM data files; ‘string’ means to treat verbatim text
+as string constants; ‘polymode’ uses the Polymode package when it is
+installed."
   :type '(radio (const :tag "Disable" nil)
+		(const :tag "String" string)
 		(const :tag "Polymode" polymode))
   :group 'openfoam)
 
@@ -329,6 +334,7 @@ A value of ‘nil’ means to treat C++ code as string constants."
 		    "#codeStream"
 		    "#if" "#ifeq" "#else" "#endif") t)
       "\\>")
+    ;; Verbatim text.
     ,(regexp-opt '("#{" "#}"))
     ;; Macros.
     ("\\(\\$\\)\\(\\sw*\\(?:\\(?:\\.+\\|:\\)\\sw+\\)*\\)"
@@ -344,7 +350,9 @@ A value of ‘nil’ means to treat C++ code as string constants."
   (setq-local openfoam-multiple-major-modes
 	      (cl-case (default-value 'openfoam-multiple-major-modes)
 		(polymode
-		 (openfoam-poly-setup))))
+		 (openfoam-poly-setup))
+		(string
+		 'string)))
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
@@ -354,15 +362,17 @@ A value of ‘nil’ means to treat C++ code as string constants."
   (cl-case openfoam-multiple-major-modes
     (polymode
      (openfoam-poly-mode))
-    (otherwise
+    (string
      (setq-local syntax-propertize-function
 		 (syntax-propertize-rules
 		  ;; Verbatim text.
 		  ("\\(#\\){"
 		   (1 "|"))
 		  ("#\\(}\\)"
-		   (1 "|"))))))
-  (setq-local parse-sexp-lookup-properties t)
+		   (1 "|"))))
+     (setq-local parse-sexp-lookup-properties t))
+    (t
+     ()))
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
