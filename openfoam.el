@@ -234,6 +234,9 @@ as data."
 		(const :tag "Polymode" polymode))
   :group 'openfoam)
 
+(defvar openfoam-poly-c++-innermode)
+(defvar openfoam-poly-mode)
+
 ;; https://polymode.github.io/
 (defun openfoam-poly-setup ()
   (unless (featurep 'polymode)
