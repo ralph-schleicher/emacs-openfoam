@@ -376,9 +376,9 @@ installed."
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
-  (smie-setup openfoam-smie-grammar 'openfoam-smie-rules
-	      :forward-token 'openfoam-smie-forward-token
-	      :backward-token 'openfoam-smie-backward-token)
+  (smie-setup openfoam-smie-grammar #'openfoam-smie-rules
+	      :forward-token #'openfoam-smie-forward-token
+	      :backward-token #'openfoam-smie-backward-token)
   ;; Miscellaneous.
   (setq indent-tabs-mode nil)
   ())
@@ -644,7 +644,7 @@ CONTENTS is the file contents."
 
 (defun openfoam-add-to-data-file-contents-alist (file-name contents)
   "Add or update an element in ‘openfoam-data-file-contents-alist’."
-  (let ((cell (assoc file-name openfoam-data-file-contents-alist 'openfoam-file-name-equal-p)))
+  (let ((cell (assoc file-name openfoam-data-file-contents-alist #'openfoam-file-name-equal-p)))
     (if (not (null cell))
 	(setcdr cell contents)
       (push (cons file-name contents) openfoam-data-file-contents-alist)))
@@ -680,7 +680,7 @@ CONTENTS is the file contents."
 		  (unless (file-exists-p file)
 		    (with-temp-buffer
 		      (set-visited-file-name file t)
-		      (when-let ((contents (cdr (assoc name openfoam-data-file-contents-alist 'openfoam-file-name-equal-p))))
+		      (when-let ((contents (cdr (assoc name openfoam-data-file-contents-alist #'openfoam-file-name-equal-p))))
 			(insert contents))
 		      (goto-char (point-min))
 		      (unless (re-search-forward "-\\*-" (save-excursion (end-of-line) (point)) t)
