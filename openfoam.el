@@ -373,7 +373,8 @@ as data."
   ;; Syntax properties.
   (cl-case openfoam-verbatim-text-mode
     (polymode
-     (openfoam-poly-mode))
+     (when (featurep 'polymode)
+       (funcall #'openfoam-poly-mode 1)))
     (string
      (setq-local syntax-propertize-function
 		 (syntax-propertize-rules
