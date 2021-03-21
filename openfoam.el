@@ -213,7 +213,7 @@ Run the ‘c-set-style’ command to change the indentation style."
   :group 'openfoam)
 
 ;;;###autoload
-(define-derived-mode openfoam-c++-mode c++-mode "OpenFOAM/C++"
+(define-derived-mode openfoam-c++-mode c++-mode "C++"
   "Major mode for editing OpenFOAM C++ code."
   :group 'openfoam
   :syntax-table nil
