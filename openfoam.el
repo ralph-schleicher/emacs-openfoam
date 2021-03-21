@@ -264,6 +264,16 @@ installed."
 
 ;;;; Major Mode
 
+(defun openfoam-mode-p ()
+  "Return true if the current buffer's major mode is OpenFOAM mode."
+  (eq (if (and (featurep 'polymode)
+	       (symbol-value 'polymode-mode))
+	  (with-current-buffer
+	      (funcall #'pm-base-buffer)
+	    major-mode)
+	major-mode)
+      'openfoam-mode))
+
 (defcustom openfoam-mode-hook nil
   "Hook called by ‘openfoam-mode’."
   :type 'hook
