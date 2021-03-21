@@ -223,13 +223,12 @@ Run the ‘c-set-style’ command to change the indentation style."
   ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
   (setq indent-tabs-mode nil))
 
-(defcustom openfoam-multiple-major-modes 'polymode
-  "The feature providing editing support for multiple major modes.
-Multiple major modes means how to indent and fontify C++ code inside
-verbatim text blocks.  A value of ‘nil’ means to use the indentation
-style of OpenFOAM data files; ‘string’ means to treat verbatim text
-as string constants; ‘polymode’ uses the Polymode package when it is
-installed."
+(defcustom openfoam-verbatim-text-mode 'polymode
+  "How to indent and fontify verbatim text blocks in OpenFOAM data files.
+A value of ‘polymode’ means to use the Polymode package for editing
+verbatim text in OpenFOAM C++ mode; ‘string’ means to treat verbatim
+text as string constants; any other value means to treat verbatim text
+as data."
   :type '(radio (const :tag "Data" nil)
 		(const :tag "String" string)
 		(const :tag "Polymode" polymode))
@@ -357,8 +356,8 @@ installed."
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
-  (setq-local openfoam-multiple-major-modes
-	      (cl-case (default-value 'openfoam-multiple-major-modes)
+  (setq-local openfoam-verbatim-text-mode
+	      (cl-case (default-value 'openfoam-verbatim-text-mode)
 		(polymode
 		 (openfoam-poly-setup))
 		(string
@@ -369,7 +368,7 @@ installed."
 	      comment-end-skip nil
 	      comment-end "")
   ;; Syntax properties.
-  (cl-case openfoam-multiple-major-modes
+  (cl-case openfoam-verbatim-text-mode
     (polymode
      (openfoam-poly-mode))
     (string
