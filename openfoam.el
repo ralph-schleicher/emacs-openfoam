@@ -230,7 +230,7 @@ verbatim text blocks.  A value of ‘nil’ means to use the indentation
 style of OpenFOAM data files; ‘string’ means to treat verbatim text
 as string constants; ‘polymode’ uses the Polymode package when it is
 installed."
-  :type '(radio (const :tag "Disable" nil)
+  :type '(radio (const :tag "Data" nil)
 		(const :tag "String" string)
 		(const :tag "Polymode" polymode))
   :group 'openfoam)
