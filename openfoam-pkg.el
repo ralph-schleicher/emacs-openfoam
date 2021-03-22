@@ -1,6 +1,6 @@
 ;;; -*- no-byte-compile: t -*-
 
-(define-package "openfoam" "0.1"
+(define-package "openfoam" "0.2"
   "OpenFOAM files and directories."
   (polymode)
   :keywords '("languages")
