@@ -285,7 +285,7 @@ of the closing ‘]’ character."
   (when (eq major-mode 'openfoam-mode)
     (let ((start (nth 1 (syntax-ppss (or pos (point))))))
       (when (eql (char-after start) ?\[)
-        start))))
+	start))))
 
 (defcustom openfoam-documentation-dimension-set-elements 'unit-names
   "How to document the elements of a dimension set."
@@ -318,63 +318,63 @@ of the closing ‘]’ character."
   "Return the documentation string for a dimension set."
   (when-let ((start (openfoam-inside-dimension-set-p)))
     (let ((limit (point))
-          (arg 0)) ;argument index
+	  (arg 0)) ;argument index
       (save-excursion
-        (goto-char (1+ start)) ;after the ‘[’
-        (openfoam-skip-forward)
-        (while (and (looking-at "[-+]?[0-9]+") ;integer
+	(goto-char (1+ start)) ;after the ‘[’
+	(openfoam-skip-forward)
+	(while (and (looking-at "[-+]?[0-9]+") ;integer
 		    (and (goto-char (match-end 0)) t)
 		    (< (point) limit)
 		    (let ((pos (point)))
 		      (openfoam-skip-forward)
-                      (< pos (point))) ;whitespace
+		      (< pos (point))) ;whitespace
 		    (cl-incf arg))))
       (cl-multiple-value-bind (doc arg-alist)
-          (cl-case openfoam-documentation-dimension-set-elements
-            (unit-names
-             (cl-values "[KILOGRAM METRE SECOND KELVIN MOLE AMPERE CANDELA]"
-                        '((0  1  9)
-	                  (1 10 15)
-	                  (2 16 22)
-	                  (3 23 29)
-	                  (4 30 34)
-	                  (5 35 41)
-	                  (6 42 49))))
-            (unit-symbols
-             (cl-values "[kg m s K mol A cd]"
-	                '((0  1  3)
-	                  (1  4  5)
-	                  (2  6  7)
-	                  (3  8  9)
-	                  (4 10 13)
-	                  (5 14 15)
-	                  (6 16 18))))
-            (dimension-names
-             (cl-values "[MASS LENGTH TIME THERMODYNAMIC-TEMPERATURE AMOUNT-OF-SUBSTANCE ELECTRIC-CURRENT LUMINOUS-INTENSITY]"
-                        '((0  1  5)
-	                  (1  6 12)
-	                  (2 13 17)
-	                  (3 18 43)
-	                  (4 44 63)
-	                  (5 64 80)
-	                  (6 81 99))))
-            (dimension-symbols
-             (cl-values "[M L T Θ N I J]"
-	                '((0  1  2)
-	                  (1  3  4)
-	                  (2  5  6)
-	                  (3  7  8)
-	                  (4  9 10)
-	                  (5 11 12)
-	                  (6 13 14)))))
-        (when (and doc arg-alist)
-          (set-text-properties 0 (length doc) () doc)
-          (when-let ((pos (cl-rest (assoc arg arg-alist #'eql))))
-            (put-text-property
-             (cl-first pos) (cl-second pos)
-             'face 'eldoc-highlight-function-argument
-             doc)))
-        doc))))
+	  (cl-case openfoam-documentation-dimension-set-elements
+	    (unit-names
+	     (cl-values "[KILOGRAM METRE SECOND KELVIN MOLE AMPERE CANDELA]"
+			'((0  1  9)
+			  (1 10 15)
+			  (2 16 22)
+			  (3 23 29)
+			  (4 30 34)
+			  (5 35 41)
+			  (6 42 49))))
+	    (unit-symbols
+	     (cl-values "[kg m s K mol A cd]"
+			'((0  1  3)
+			  (1  4  5)
+			  (2  6  7)
+			  (3  8  9)
+			  (4 10 13)
+			  (5 14 15)
+			  (6 16 18))))
+	    (dimension-names
+	     (cl-values "[MASS LENGTH TIME THERMODYNAMIC-TEMPERATURE AMOUNT-OF-SUBSTANCE ELECTRIC-CURRENT LUMINOUS-INTENSITY]"
+			'((0  1  5)
+			  (1  6 12)
+			  (2 13 17)
+			  (3 18 43)
+			  (4 44 63)
+			  (5 64 80)
+			  (6 81 99))))
+	    (dimension-symbols
+	     (cl-values "[M L T Θ N I J]"
+			'((0  1  2)
+			  (1  3  4)
+			  (2  5  6)
+			  (3  7  8)
+			  (4  9 10)
+			  (5 11 12)
+			  (6 13 14)))))
+	(when (and doc arg-alist)
+	  (set-text-properties 0 (length doc) () doc)
+	  (when-let ((pos (cl-rest (assoc arg arg-alist #'eql))))
+	    (put-text-property
+	     (cl-first pos) (cl-second pos)
+	     'face 'eldoc-highlight-function-argument
+	     doc)))
+	doc))))
 
 (defun openfoam-eldoc-documentation-function ()
   "Value for ‘eldoc-documentation-function’."
@@ -803,11 +803,11 @@ CONTENTS is the file contents."
   (let ((directory (file-name-as-directory directory)))
     (mkdir directory t)
     (cl-flet ((create-directory (name)
-		(let ((dir (expand-file-name name directory)))
+	        (let ((dir (expand-file-name name directory)))
 		  (unless (file-directory-p dir)
 		    (mkdir dir))))
 	      (create-data-file (name)
-		(let ((file (expand-file-name name directory)))
+	        (let ((file (expand-file-name name directory)))
 		  (unless (file-exists-p file)
 		    (with-temp-buffer
 		      (set-visited-file-name file t)
