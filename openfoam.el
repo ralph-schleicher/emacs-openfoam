@@ -41,6 +41,7 @@
 (require 'smie)
 (require 'cc-mode)
 (require 'package)
+(require 'eldoc)
 
 (defgroup openfoam nil
   "OpenFOAM files and directories."
@@ -264,6 +265,121 @@ as data."
 	:lighter ""))
     'polymode))
 
+;;;; Documentation
+
+(defun openfoam-list-end (&optional start)
+  "Return the end of the list beginning at START (defaults to point).
+Value is the buffer position after the closing parenthesis, or ‘nil’
+if there is no matching closing parenthesis."
+  (ignore-errors
+    (save-excursion
+      (goto-char (or start (point)))
+      (forward-list 1)
+      (point))))
+
+(defun openfoam-inside-dimension-set-p (&optional pos)
+  "Return true if POS (defaults to point) is inside a dimension set.
+Actual value is the buffer position of the opening ‘[’ character.
+Use the ‘openfoam-list-end’ function to find the buffer position
+of the closing ‘]’ character."
+  (when (eq major-mode 'openfoam-mode)
+    (let ((start (nth 1 (syntax-ppss (or pos (point))))))
+      (when (eql (char-after start) ?\[)
+        start))))
+
+(defcustom openfoam-documentation-dimension-set-elements 'unit-names
+  "How to document the elements of a dimension set."
+  :type '(choice (const :tag "Unit names" unit-names)
+		 (const :tag "Unit symbols" unit-symbols)
+		 (const :tag "Dimension names" dimension-names)
+		 (const :tag "Dimension symbols" dimension-symbols))
+  :group 'openfoam)
+
+;;(defun openfoam-eldoc-compile-dimension-set (elements)
+;;  (let ((arg 0) (start 1) end alist)
+;;    (dolist (element elements)
+;;      (setq end (+ start (length element)))
+;;      (push (list arg start end) alist)
+;;      (setq start (1+ end))
+;;      (cl-incf arg))
+;;    (cl-values
+;;     (concat "[" (mapconcat #'identity elements " ") "]")
+;;     (nreverse alist))))
+;;(openfoam-eldoc-compile-dimension-set
+;; '("KILOGRAM" "METRE" "SECOND" "KELVIN" "MOLE" "AMPERE" "CANDELA"))
+;;(openfoam-eldoc-compile-dimension-set
+;; '("kg" "m" "s" "K" "mol" "A" "cd"))
+;;(openfoam-eldoc-compile-dimension-set
+;; '("MASS" "LENGTH" "TIME" "THERMODYNAMIC-TEMPERATURE" "AMOUNT-OF-SUBSTANCE" "ELECTRIC-CURRENT" "LUMINOUS-INTENSITY"))
+;;(openfoam-eldoc-compile-dimension-set
+;; '("M" "L" "T" "Θ" "N" "I" "J"))
+
+(defun openfoam-eldoc-dimension-set ()
+  "Return the documentation string for a dimension set."
+  (when-let ((start (openfoam-inside-dimension-set-p)))
+    (let ((limit (point))
+          (arg 0)) ;argument index
+      (save-excursion
+        (goto-char (1+ start)) ;after the ‘[’
+        (openfoam-skip-forward)
+        (while (and (looking-at "[-+]?[0-9]+") ;integer
+		    (and (goto-char (match-end 0)) t)
+		    (< (point) limit)
+		    (let ((pos (point)))
+		      (openfoam-skip-forward)
+                      (< pos (point))) ;whitespace
+		    (cl-incf arg))))
+      (cl-multiple-value-bind (doc arg-alist)
+          (cl-case openfoam-documentation-dimension-set-elements
+            (unit-names
+             (cl-values "[KILOGRAM METRE SECOND KELVIN MOLE AMPERE CANDELA]"
+                        '((0  1  9)
+	                  (1 10 15)
+	                  (2 16 22)
+	                  (3 23 29)
+	                  (4 30 34)
+	                  (5 35 41)
+	                  (6 42 49))))
+            (unit-symbols
+             (cl-values "[kg m s K mol A cd]"
+	                '((0  1  3)
+	                  (1  4  5)
+	                  (2  6  7)
+	                  (3  8  9)
+	                  (4 10 13)
+	                  (5 14 15)
+	                  (6 16 18))))
+            (dimension-names
+             (cl-values "[MASS LENGTH TIME THERMODYNAMIC-TEMPERATURE AMOUNT-OF-SUBSTANCE ELECTRIC-CURRENT LUMINOUS-INTENSITY]"
+                        '((0  1  5)
+	                  (1  6 12)
+	                  (2 13 17)
+	                  (3 18 43)
+	                  (4 44 63)
+	                  (5 64 80)
+	                  (6 81 99))))
+            (dimension-symbols
+             (cl-values "[M L T Θ N I J]"
+	                '((0  1  2)
+	                  (1  3  4)
+	                  (2  5  6)
+	                  (3  7  8)
+	                  (4  9 10)
+	                  (5 11 12)
+	                  (6 13 14)))))
+        (when (and doc arg-alist)
+          (set-text-properties 0 (length doc) () doc)
+          (when-let ((pos (cl-rest (assoc arg arg-alist #'eql))))
+            (put-text-property
+             (cl-first pos) (cl-second pos)
+             'face 'eldoc-highlight-function-argument
+             doc)))
+        doc))))
+
+(defun openfoam-eldoc-documentation-function ()
+  "Value for ‘eldoc-documentation-function’."
+  (openfoam-eldoc-dimension-set))
+
 ;;;; Major Mode
 
 (defun openfoam-mode-p ()
@@ -392,6 +508,8 @@ as data."
   (smie-setup openfoam-smie-grammar #'openfoam-smie-rules
 	      :forward-token #'openfoam-smie-forward-token
 	      :backward-token #'openfoam-smie-backward-token)
+  (setq-local eldoc-documentation-function
+	      #'openfoam-eldoc-documentation-function)
   ;; Miscellaneous.
   (setq indent-tabs-mode nil)
   ())
