@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24664 63298 731082
-;;;;;;  525000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24666 8172 757063
+;;;;;;  785000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-c++-mode "openfoam" "\
