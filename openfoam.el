@@ -520,8 +520,8 @@ of the closing ‘]’ character."
 	      :backward-token #'openfoam-smie-backward-token)
   ;; Documentation.
   (setq-local eldoc-documentation-function #'openfoam-eldoc-documentation-function
-	      ;; Save space in the mode line.  Also avoid confusion of
-	      ;; the user it she reads ‘ElDoc’.
+	      ;; Save space in the mode line.  Also avoid confusing
+	      ;; the user if she reads ‘ElDoc’.
 	      eldoc-minor-mode-string nil)
   (eldoc-mode 1)
   ;; Enable Polymode after setting up the host mode.
