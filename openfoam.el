@@ -475,18 +475,18 @@ of the closing ‘]’ character."
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
-  (setq-local openfoam-verbatim-text-mode
-	      (cl-case (default-value 'openfoam-verbatim-text-mode)
-		(polymode
-		 (openfoam-poly-setup))
-		(string
-		 'string)))
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
 	      comment-end-skip nil
 	      comment-end "")
   ;; Syntax properties.
+  (setq-local openfoam-verbatim-text-mode
+	      (cl-case (default-value 'openfoam-verbatim-text-mode)
+		(polymode
+		 (openfoam-poly-setup))
+		(string
+		 'string)))
   (cl-case openfoam-verbatim-text-mode
     (polymode
      (when (featurep 'polymode)
