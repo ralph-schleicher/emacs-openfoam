@@ -505,13 +505,16 @@ of the closing ‘]’ character."
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
+  (setq indent-tabs-mode nil)
   (smie-setup openfoam-smie-grammar #'openfoam-smie-rules
 	      :forward-token #'openfoam-smie-forward-token
 	      :backward-token #'openfoam-smie-backward-token)
-  (setq-local eldoc-documentation-function
-	      #'openfoam-eldoc-documentation-function)
-  ;; Miscellaneous.
-  (setq indent-tabs-mode nil)
+  ;; Documentation.
+  (setq-local eldoc-documentation-function #'openfoam-eldoc-documentation-function
+	      ;; Save space in the mode line.  Also avoid confusion of
+	      ;; the user it she reads ‘ElDoc’.
+	      eldoc-minor-mode-string nil)
+  (eldoc-mode 1)
   ())
 
 ;;;###autoload
