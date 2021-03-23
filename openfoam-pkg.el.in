@@ -2,7 +2,7 @@
 
 (define-package "openfoam" "@VERSION@"
   "OpenFOAM files and directories."
-  (polymode)
+  '(polymode)
   :keywords '("languages")
   :url "https://github.com/ralph-schleicher/emacs-openfoam")
 
