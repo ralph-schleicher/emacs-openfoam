@@ -323,7 +323,7 @@ of the closing ‘]’ character."
 	(goto-char (1+ start)) ;after the ‘[’
 	(openfoam-skip-forward)
 	(while (and (looking-at "[-+]?[0-9]+") ;integer
-		    (and (goto-char (match-end 0)) t)
+		    (goto-char (match-end 0))
 		    (< (point) limit)
 		    (let ((pos (point)))
 		      (openfoam-skip-forward)
