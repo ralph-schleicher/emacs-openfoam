@@ -397,6 +397,20 @@ of the closing ‘]’ character."
   :type 'hook
   :group 'openfoam)
 
+(defvar openfoam-mode-map nil
+  "Keymap used in OpenFOAM mode buffers.")
+(when (null openfoam-mode-map)
+  (let ((map (make-sparse-keymap)))
+    (setq openfoam-mode-map map)))
+
+(easy-menu-define openfoam-mode-menu openfoam-mode-map
+  "Menu for OpenFOAM mode buffers."
+  '("OpenFOAM"
+    ["Apply Template" openfoam-apply-data-file-template
+     :help "Apply the OpenFOAM data file template to the current buffer"]
+    ["Inser Header" openfoam-insert-data-file-header
+     :help "Insert an OpenFOAM data file header into the current buffer"]))
+
 (defvar openfoam-mode-syntax-table
   (let ((syntax-table (make-syntax-table)))
     ;; String constants.
