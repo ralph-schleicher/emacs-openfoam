@@ -7,6 +7,23 @@
 An Emacs major mode for editing OpenFOAM data files; and user
 commands for OpenFOAM case directories.
 
+Here is a concise list of features.
+
+- Major mode for OpenFOAM data files.
+  - Syntactic indentation.
+  - Syntax highlighting.
+  - Customisable syntax for verbatim text blocks.
+    - C++ major mode.
+    - String constant.
+    - Data block.
+  - ElDoc support.
+- Major mode for OpenFOAM C++ code.
+  - Customisable indentation style.
+- User commands:
+  - Create OpenFOAM case directory.
+  - Apply OpenFOAM data file template.
+  - Insert OpenFOAM data file header.
+
 
 * Installation
 
@@ -18,3 +35,7 @@ initialization file:
      (require 'openfoam-autoloads)
 
 See file ‘init.el’ for my personal settings.
+
+You may also install the Polymode package from MELPA stable.
+Polymode provides multiple major mode support for editing C++
+code in verbatim text blocks.
