@@ -22,43 +22,49 @@
 ## Code:
 
 PACKAGE = openfoam
-VERSION = 0.2
+VERSION = $(shell cat version.expr)
+TARNAME = $(PACKAGE)-$(VERSION)
 
 ### Rules
 
 .PHONY: all
 all: openfoam-pkg.el autoloads
 
-openfoam-pkg.el: openfoam-pkg.el.in
+openfoam-pkg.el: openfoam-pkg.el.in version.expr
 	sed -e 's/@PACKAGE@/$(PACKAGE)/g' \
 	    -e 's/@VERSION@/$(VERSION)/g' $< > $@~ && mv -f $@~ $@
+
+.PHONY: autoloads
+autoloads: openfoam-autoloads.el
+openfoam-autoloads.el: generate-autoloads.el openfoam.el
+	emacs --batch --load generate-autoloads.el
+
+.PHONY: check
+check: all
+	emacs --batch --funcall batch-byte-compile openfoam.el
 
 .PHONY: clean
 clean:
 	rm -f openfoam-pkg.el
 	rm -f *.elc
 
-.PHONY: check
-check: all
-	emacs --batch --funcall batch-byte-compile openfoam.el
-
 ### Maintenance
 
 dist_FILES = openfoam.el openfoam-pkg.el init.el
 
 .PHONY: dist
-dist: $(PACKAGE)-$(VERSION).tar
-$(PACKAGE)-$(VERSION).tar: check $(dist_FILES)
-	rm -fr $(PACKAGE)-$(VERSION)
-	mkdir $(PACKAGE)-$(VERSION)
-	install -c -m 644 $(dist_FILES) $(PACKAGE)-$(VERSION)
-	rm -f $(PACKAGE)-$(VERSION).tar
-	tar -cf $(PACKAGE)-$(VERSION).tar $(PACKAGE)-$(VERSION)
+dist: $(TARNAME).tar
+$(TARNAME).tar: check $(dist_FILES)
+	rm -fr $(TARNAME)
+	mkdir $(TARNAME)
+	install -c -m 644 $(dist_FILES) $(TARNAME)
+	rm -f $(TARNAME).tar
+	tar -cf $(TARNAME).tar --owner=0 --group=0 $(TARNAME)
 
-.PHONY: autoloads
-autoloads: openfoam-autoloads.el
-openfoam-autoloads.el: generate-autoloads.el openfoam.el
-	emacs --batch --load generate-autoloads.el
+.PHONY: tag
+tag: all
+	test 0 = `svn status -q | grep -v "^ " | wc -l` || exit 1
+	svn copy "^/trunk" "^/tags/$(TARNAME)" -m "Version $(VERSION)."
 
 .PHONY: sync
 sync: all
