@@ -502,21 +502,15 @@ of the closing ‘]’ character."
 		 (openfoam-poly-setup))
 		(string
 		 'string)))
-  (cl-case openfoam-verbatim-text-mode
-    (polymode
-     (when (featurep 'polymode)
-       (funcall #'openfoam-poly-mode 1)))
-    (string
-     (setq-local syntax-propertize-function
-		 (syntax-propertize-rules
-		  ;; Verbatim text.
-		  ("\\(#\\){"
-		   (1 "|"))
-		  ("#\\(}\\)"
-		   (1 "|"))))
-     (setq-local parse-sexp-lookup-properties t))
-    (t
-     ()))
+  (when (eq openfoam-verbatim-text-mode 'string)
+    (setq-local syntax-propertize-function
+		(syntax-propertize-rules
+		 ;; Verbatim text.
+		 ("\\(#\\){"
+		  (1 "|"))
+		 ("#\\(}\\)"
+		  (1 "|"))))
+    (setq-local parse-sexp-lookup-properties t))
   ;; Syntax highlighting.
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
@@ -530,6 +524,9 @@ of the closing ‘]’ character."
 	      ;; the user it she reads ‘ElDoc’.
 	      eldoc-minor-mode-string nil)
   (eldoc-mode 1)
+  ;; Enable Polymode after setting up the host mode.
+  (when (eq openfoam-verbatim-text-mode 'polymode)
+    (funcall #'openfoam-poly-mode 1))
   ())
 
 ;;;###autoload
