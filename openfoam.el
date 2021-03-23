@@ -411,7 +411,9 @@ of the closing ‘]’ character."
     ["Inser Header" openfoam-insert-data-file-header
      :help "Insert an OpenFOAM data file header into the current buffer"]))
 
-(defvar openfoam-mode-syntax-table
+(defvar openfoam-mode-syntax-table nil
+  "Syntax table used in OpenFOAM mode buffers.")
+(when (null openfoam-mode-syntax-table)
   (let ((syntax-table (make-syntax-table)))
     ;; String constants.
     (modify-syntax-entry ?\" "\"" syntax-table)
@@ -454,8 +456,7 @@ of the closing ‘]’ character."
     (modify-syntax-entry ?`  "." syntax-table)
     (modify-syntax-entry ?|  "." syntax-table)
     (modify-syntax-entry ?~  "." syntax-table)
-    syntax-table)
-  "Syntax table used in OpenFOAM mode buffers.")
+    (setq openfoam-mode-syntax-table syntax-table)))
 
 (defvar openfoam-mode-abbrev-table nil
   "Abbreviation table used in OpenFOAM mode buffers.")
