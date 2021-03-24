@@ -50,7 +50,7 @@
   :prefix "openfoam-")
 
 (defun openfoam-string-quote (string)
-  "Quote all meta-characters in a string."
+  "Quote all meta-characters in STRING."
   (with-temp-buffer
     (mapc (lambda (char)
 	    (when (or (char-equal char ?\\)
@@ -86,7 +86,7 @@ Leave point where scanning stops."
   (forward-comment (- (point))))
 
 (defun openfoam-after-block-p ()
-  "Return true if point is after the closing ‘}’ character of a dictionary.
+  "Return non-nil if point is after the closing ‘}’ character of a dictionary.
 The code assumes that point is not inside a string or comment."
   (and (eql (char-before) ?\})
        ;; Not closing a verbatim text.
@@ -115,6 +115,7 @@ The code assumes that point is not inside a string or comment."
   "End statement token.")
 
 (defconst openfoam-smie-grammar
+  "Grammer table for SMIE."
   (smie-prec2->grammar
    (smie-bnf->prec2
     ;; These rules are required to recognize ‘#{’ and ‘#}’ as opening
@@ -125,6 +126,7 @@ The code assumes that point is not inside a string or comment."
     )))
 
 (defun openfoam-smie-rules (method arg)
+  "Indentation rules for SMIE; see ‘smie-rules-function’."
   (pcase (cons method arg)
     ('(:elem . basic)
      openfoam-basic-offset)
@@ -207,7 +209,7 @@ The code assumes that point is not inside a string or comment."
 
 (defcustom openfoam-c++-style "OpenFOAM"
   "Default indentation style for OpenFOAM C++ code.
-A value of ‘nil’ means to not change the indentation style.
+A value of nil means to not change the indentation style.
 Run the ‘c-set-style’ command to change the indentation style."
   :type '(choice (const :tag "Inherit" nil)
 		 (string :tag "Style"))
@@ -240,6 +242,7 @@ as data."
 
 ;; https://polymode.github.io/
 (defun openfoam-poly-setup ()
+  "Attempt to setup Polymode."
   (unless (featurep 'polymode)
     (when (package-installed-p 'polymode)
       (require' polymode)))
@@ -269,7 +272,7 @@ as data."
 
 (defun openfoam-list-end (&optional start)
   "Return the end of the list beginning at START (defaults to point).
-Value is the buffer position after the closing parenthesis, or ‘nil’
+Value is the buffer position after the closing parenthesis, or nil
 if there is no matching closing parenthesis."
   (ignore-errors
     (save-excursion
@@ -278,10 +281,10 @@ if there is no matching closing parenthesis."
       (point))))
 
 (defun openfoam-inside-dimension-set-p (&optional pos)
-  "Return true if POS (defaults to point) is inside a dimension set.
-Actual value is the buffer position of the opening ‘[’ character.
-Use the ‘openfoam-list-end’ function to find the buffer position
-of the closing ‘]’ character."
+  "Return non-nil if POS (defaults to point) is inside a dimension set.
+Actual return value is the buffer position of the opening ‘[’ character.
+Use the ‘openfoam-list-end’ function to find the buffer position of the
+closing ‘]’ character."
   (when (eq major-mode 'openfoam-mode)
     (let ((start (nth 1 (syntax-ppss (or pos (point))))))
       (when (eql (char-after start) ?\[)
@@ -383,9 +386,9 @@ of the closing ‘]’ character."
 ;;;; Major Mode
 
 (defun openfoam-mode-p ()
-  "Return true if the current buffer's major mode is OpenFOAM mode."
-  (eq (if (and (featurep 'polymode)
-	       (symbol-value 'polymode-mode))
+  "Return non-nil if the current buffer's major mode is OpenFOAM mode."
+  (eq (if (when (featurep 'polymode)
+	    (symbol-value 'polymode-mode))
 	  (with-current-buffer
 	      (funcall #'pm-base-buffer)
 	    major-mode)
@@ -557,7 +560,7 @@ The following substitutions are made:
      %u  user login name
      %n  user full name
      %m  user mail address
-     %h  host name, i.e. ‘system-name’
+     %h  host name, i.e. ‘system-name’ function
      %d  domain name, i.e. ‘mail-host-address’
      %p  buffer file name
      %f  buffer file name without directory
@@ -789,7 +792,10 @@ CONTENTS is the file contents."
   :group 'openfoam)
 
 (defun openfoam-add-to-data-file-contents-alist (file-name contents)
-  "Add or update an element in ‘openfoam-data-file-contents-alist’."
+  "Add or update an element in ‘openfoam-data-file-contents-alist’.
+
+First argument FILE-NAME is the relative file name in a case directory.
+Second argument CONTENTS is the file contents."
   (let ((cell (assoc file-name openfoam-data-file-contents-alist #'openfoam-file-name-equal-p)))
     (if (not (null cell))
 	(setcdr cell contents)
@@ -813,7 +819,9 @@ CONTENTS is the file contents."
 
 ;;;###autoload
 (defun openfoam-create-case-directory (directory)
-  "Create an OpenFOAM case directory."
+  "Create an OpenFOAM case directory.
+
+Argument DIRECTORY is the directory file name."
   (interactive "F")
   (let ((directory (file-name-as-directory directory)))
     (mkdir directory t)
