@@ -115,15 +115,14 @@ The code assumes that point is not inside a string or comment."
   "End statement token.")
 
 (defconst openfoam-smie-grammar
-  "Grammer table for SMIE."
   (smie-prec2->grammar
    (smie-bnf->prec2
     ;; These rules are required to recognize ‘#{’ and ‘#}’ as opening
     ;; token and closing token respectively.
     `((entries (entries ,openfoam-smie-end entries)
 	       ("#{" entries "#}")))
-    `((assoc ,openfoam-smie-end))
-    )))
+    `((assoc ,openfoam-smie-end))))
+  "Grammer table for SMIE.")
 
 (defun openfoam-smie-rules (method arg)
   "Indentation rules for SMIE; see ‘smie-rules-function’."
