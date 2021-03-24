@@ -410,8 +410,10 @@ closing ‘]’ character."
   '("OpenFOAM"
     ["Apply Template" openfoam-apply-data-file-template
      :help "Apply the OpenFOAM data file template to the current buffer"]
-    ["Inser Header" openfoam-insert-data-file-header
-     :help "Insert an OpenFOAM data file header into the current buffer"]))
+    ["Insert Header" openfoam-insert-data-file-header
+     :help "Insert an OpenFOAM data file header into the current buffer"]
+    ["Insert Dimension Set" openfoam-insert-dimension-set
+     :help "Insert a dimension set at point"]))
 
 (defvar openfoam-mode-syntax-table nil
   "Syntax table used in OpenFOAM mode buffers.")
@@ -801,6 +803,13 @@ Second argument CONTENTS is the file contents."
   openfoam-data-file-contents-alist)
 
 (put 'openfoam-add-to-data-file-contents-alist 'lisp-indent-function 1)
+
+(defun openfoam-insert-dimension-set ()
+  "Insert a dimension set at point.
+Leave point before the opening ‘[’."
+  (interactive)
+  (save-excursion
+    (insert "[0 0 0 0 0 0 0]")))
 
 ;;;; Case Directories
 
