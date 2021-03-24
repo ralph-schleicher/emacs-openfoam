@@ -38,9 +38,9 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'smie)
 (require 'cc-mode)
 (require 'package)
+(require 'smie)
 (require 'eldoc)
 
 (defgroup openfoam nil
