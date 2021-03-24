@@ -1,8 +1,8 @@
 ;;; -*- no-byte-compile: t -*-
 
-(define-package "openfoam" "0.3"
+(define-package "openfoam" "0.4"
   "OpenFOAM files and directories."
-  '(polymode)
+  '((polymode "0.2"))
   :keywords '("languages")
   :url "https://github.com/ralph-schleicher/emacs-openfoam")
 
