@@ -485,8 +485,7 @@ closing ‘]’ character."
     ;; Macros.
     ("\\(\\$\\)\\(\\sw*\\(?:\\(?:\\.+\\|:\\)\\sw+\\)*\\)"
      (1 font-lock-keyword-face)
-     (2 font-lock-variable-name-face nil t))
-    )
+     (2 font-lock-variable-name-face nil t)))
   "Default expressions to highlight in OpenFOAM mode buffers.")
 
 ;;;###autoload
