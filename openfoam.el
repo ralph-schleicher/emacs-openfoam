@@ -32,8 +32,9 @@
 ;; ┆      A nd          ┆
 ;; ┆      M anipulation ┆
 ;;
-;; Emacs major modes for editing OpenFOAM data files and C++ code; and
-;; user commands for OpenFOAM case directories.
+;; This package provides major modes for editing OpenFOAM data files
+;; and C++ code.  There are also user commands for managing OpenFOAM
+;; case directories.
 
 ;;; Code:
 
