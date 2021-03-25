@@ -4,8 +4,8 @@
 ┆      A nd          ┆
 ┆      M anipulation ┆
 
-An Emacs major mode for editing OpenFOAM data files; and user
-commands for OpenFOAM case directories.
+Emacs major modes for editing OpenFOAM data files and C++ code.
+There are also user commands for managing OpenFOAM case directories.
 
 Here is a concise list of features.
 
