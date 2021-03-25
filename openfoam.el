@@ -26,14 +26,14 @@
 
 ;;; Commentary:
 
-;; ┆ Open ∇             ┆
+;; ┆ Open ∇             ┆ -*- mode: ∇; coding: utf-8; -*-
 ;; ┆      F ield        ┆
 ;; ┆      O peration    ┆
 ;; ┆      A nd          ┆
 ;; ┆      M anipulation ┆
 ;;
-;; An Emacs major mode for editing OpenFOAM data files; and user
-;; commands for OpenFOAM case directories.
+;; Emacs major modes for editing OpenFOAM data files and C++ code; and
+;; user commands for OpenFOAM case directories.
 
 ;;; Code:
 
@@ -804,6 +804,7 @@ Second argument CONTENTS is the file contents."
 
 (put 'openfoam-add-to-data-file-contents-alist 'lisp-indent-function 1)
 
+;;;###autoload
 (defun openfoam-insert-dimension-set ()
   "Insert a dimension set at point.
 Leave point before the opening ‘[’."
