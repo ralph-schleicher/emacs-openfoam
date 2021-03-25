@@ -43,6 +43,18 @@ openfoam-autoloads.el: generate-autoloads.el openfoam.el
 check: all
 	emacs --batch --funcall batch-byte-compile openfoam.el
 
+.PHONY: check-melpa
+check-melpa: all
+	( set -e ; \
+	  here=`/bin/pwd` ; \
+	  cd ../melpa ; \
+	  git checkout -f openfoam-recipe ; \
+	  git clean -f ; \
+	  cp -f $$here/openfoam.recipe recipes/openfoam ; \
+	  make clean ; \
+	  make recipes/openfoam STABLE=t ; \
+	  make recipes/openfoam )
+
 .PHONY: clean
 clean:
 	rm -f openfoam-pkg.el
