@@ -75,10 +75,14 @@ $(TARNAME).tar: check $(dist_FILES)
 
 .PHONY: tag
 tag: all
-	@test 0 = `svn status -q | grep -v "^ " | wc -l` || \
-	{ echo "Working copy is not clean" >&2 ; exit 1 ; }
-	@svn info "^/tags/$(TARNAME)" > /dev/null 2>&1 && \
-	{ echo "Tag already exists" >&2 ; exit 1 ; }
+	@if test 0 != `svn status -q | grep -v "^ " | wc -l` ; then \
+	    echo "Working copy is not clean" >&2 ; \
+	    exit 1 ; \
+	fi
+	@if svn info "^/tags/$(TARNAME)" > /dev/null 2>&1 ; then \
+	    echo "Tag already exists" >&2 ; \
+	    exit 1 ; \
+	fi
 	svn copy "^/trunk" "^/tags/$(TARNAME)" -m "Version $(VERSION)."
 
 .PHONY: sync
