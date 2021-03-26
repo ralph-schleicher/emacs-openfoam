@@ -1,41 +1,80 @@
-┆ Open ∇             ┆
-┆      F ield        ┆
-┆      O peration    ┆
-┆      A nd          ┆
-┆      M anipulation ┆
+// Open ∇             ┆ -*- mode: ∇; coding: utf-8; -*-
+//      F ield        ┆
+//      O peration    ┆
+//      A nd          ┆
+//      M anipulation ┆
 
-Emacs major modes for editing OpenFOAM data files and C++ code.
-There are also user commands for managing OpenFOAM case directories.
+/// Commentary:
 
-Here is a concise list of features.
+// This Emacs package provides major modes for editing OpenFOAM data
+// files and C++ code.  There are also user commands for managing
+// OpenFOAM case directories.
 
-- Major mode for OpenFOAM data files.
-  - Syntactic indentation.
-  - Syntax highlighting.
-  - Customisable syntax for verbatim text blocks.
-    - C++ major mode.
-    - String constant.
-    - Data block.
-  - ElDoc support.
-- Major mode for OpenFOAM C++ code.
-  - Customisable indentation style.
-- User commands:
-  - Create OpenFOAM case directory.
-  - Apply OpenFOAM data file template.
-  - Insert OpenFOAM data file header.
+/// Code:
 
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object README;
+}
 
-* Installation
+features
+{
+    dataFiles
+    {
+        majorMode yes;
+        syntacticIndentation yes;
+        syntaxHighlighting yes;
 
-Copy file ‘openfoam.el’ and ‘openfoam-autoloads.el’ into a
-directory in your Emacs load path.  Optionally byte-compile
-‘openfoam.el’.  Then add the following code to your Emacs
-initialization file:
+        // Value is either ‘polymode’ (C++ major mode), ‘string’ (string
+        // constant), or ‘nil’ (data block);
+        verbatimTextBlocks polymode;
 
-     (require 'openfoam-autoloads)
+        // For example, if point is at an exponent inside a dimension
+        // set, the corresponding dimension will be displayed in the
+        // mini-buffer.
+        eldocSupport yes;
+    }
 
-See file ‘init.el’ for my personal settings.
+    C++Code
+    {
+        majorMode yes;
 
-You may also install the Polymode package from MELPA stable.
-Polymode provides multiple major mode support for editing C++
-code in verbatim text blocks.
+        style #codeStream
+        {
+            code
+            #{
+                c_set_style ("OpenFOAM");
+            #};
+        }
+    }
+
+    userCommands
+    {
+        createCaseDirectory "mycase";
+
+        applyDataFileTemplate "mycase/0/p";
+
+        insertDataFileHeader "mycase/0/p";
+    }
+}
+
+installation
+#{
+    Copy file ‘openfoam.el’ and ‘openfoam-autoloads.el’ into a
+    directory in your Emacs load path.  Optionally byte-compile
+    ‘openfoam.el’.  Then add the following code to your Emacs
+    initialization file:
+
+         (require 'openfoam-autoloads)
+
+    See file ‘init.el’ for my personal settings.
+
+    You may also install the Polymode package from MELPA stable.
+    Polymode provides multiple major mode support for editing C++
+    code in verbatim text blocks.
+#};
+
+/// README ends here
