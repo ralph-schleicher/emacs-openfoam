@@ -75,11 +75,14 @@ $(TARNAME).tar: check $(dist_FILES)
 
 .PHONY: tag
 tag: all
-	test 0 = `svn status -q | grep -v "^ " | wc -l` || exit 1
+	@test 0 = `svn status -q | grep -v "^ " | wc -l` || \
+	{ echo "Working copy is not clean" >&2 ; exit 1 ; }
+	@svn info "^/tags/$(TARNAME)" > /dev/null 2>&1 && \
+	{ echo "Tag already exists" >&2 ; exit 1 ; }
 	svn copy "^/trunk" "^/tags/$(TARNAME)" -m "Version $(VERSION)."
 
 .PHONY: sync
 sync: all
-	~/src/github/github.sh emacs-openfoam
+	~/sync/github/push.sh emacs-openfoam
 
 ## GNUmakefile ends here
