@@ -291,31 +291,64 @@ closing ‘]’ character."
 	start))))
 
 (defcustom openfoam-doc-dimension-set-elements 'unit-names
-  "How to document the elements of a dimension set."
+  "How to document the elements of a dimension set.
+Value is either ‘unit-names’, ‘unit-symbols’, ‘dimension-names’,
+‘dimension-symbols’, or a list of seven strings.  The symbol names
+denote built-in documentation strings.  The list elements are used
+to generate a user-defined documentation string."
   :type '(choice (const :tag "Unit names" unit-names)
 		 (const :tag "Unit symbols" unit-symbols)
 		 (const :tag "Dimension names" dimension-names)
-		 (const :tag "Dimension symbols" dimension-symbols))
+		 (const :tag "Dimension symbols" dimension-symbols)
+		 (list :tag "User-defined"
+		       (string :tag "Mass"
+			       :value "KILOGRAM")
+		       (string :tag "Length"
+			       :value "METRE")
+		       (string :tag "Time"
+			       :value "SECOND")
+		       (string :tag "Thermodynamic temperature"
+			       :value "KELVIN")
+		       (string :tag "Amount of substance"
+			       :value "MOLE")
+		       (string :tag "Electric current"
+			       :value "AMPERE")
+		       (string :tag "Luminous intensity"
+			       :value "CANDELA")))
   :group 'openfoam)
 
-;;(defun openfoam-eldoc-compile-dimension-set (elements)
-;;  (let ((arg 0) (start 1) end alist)
-;;    (dolist (element elements)
-;;      (setq end (+ start (length element)))
-;;      (push (list arg start end) alist)
-;;      (setq start (1+ end))
-;;      (cl-incf arg))
-;;    (cl-values
-;;     (concat "[" (mapconcat #'identity elements " ") "]")
-;;     (nreverse alist))))
-;;(openfoam-eldoc-compile-dimension-set
-;; '("KILOGRAM" "METRE" "SECOND" "KELVIN" "MOLE" "AMPERE" "CANDELA"))
-;;(openfoam-eldoc-compile-dimension-set
-;; '("kg" "m" "s" "K" "mol" "A" "cd"))
-;;(openfoam-eldoc-compile-dimension-set
-;; '("MASS" "LENGTH" "TIME" "THERMODYNAMIC-TEMPERATURE" "AMOUNT-OF-SUBSTANCE" "ELECTRIC-CURRENT" "LUMINOUS-INTENSITY"))
-;;(openfoam-eldoc-compile-dimension-set
-;; '("M" "L" "T" "Θ" "N" "I" "J"))
+(defun openfoam-eldoc-compile-dimension-set (elements)
+  "Compile the documentation string for a dimension set.
+Argument ELEMENTS is a list of strings."
+  (let ((arg 0) (start 1) end alist)
+    (dolist (element elements)
+      (setq end (+ start (length element)))
+      (push (list arg start end) alist)
+      (setq start (1+ end))
+      (cl-incf arg))
+    (list
+     (concat "[" (mapconcat #'identity elements " ") "]")
+     (nreverse alist))))
+
+(defvar openfoam-eldoc-dimension-set-alist
+  `((unit-names
+     ,@(openfoam-eldoc-compile-dimension-set
+	'("KILOGRAM" "METRE" "SECOND" "KELVIN" "MOLE" "AMPERE" "CANDELA")))
+    (unit-symbols
+     ,@(openfoam-eldoc-compile-dimension-set
+	'("kg" "m" "s" "K" "mol" "A" "cd")))
+    (dimension-names
+     ,@(openfoam-eldoc-compile-dimension-set
+	'("MASS" "LENGTH" "TIME" "THERMODYNAMIC-TEMPERATURE"
+	  "AMOUNT-OF-SUBSTANCE" "ELECTRIC-CURRENT" "LUMINOUS-INTENSITY")))
+    (dimension-symbols
+     ,@(openfoam-eldoc-compile-dimension-set
+	'("M" "L" "T" "Θ" "N" "I" "J"))))
+  "Alist of documentation strings for a dimension set.
+List elements are cons cells of the form ‘(KEY . (STRING ARG-ALIST))’
+where KEY is equal to ‘openfoam-doc-dimension-set-elements’, STRING is
+the ElDoc documentation string and ARG-ALIST is an alist of argument
+descriptions.")
 
 (defun openfoam-eldoc-dimension-set ()
   "Return the documentation string for a dimension set."
@@ -333,43 +366,16 @@ closing ‘]’ character."
 		      (< pos (point))) ;whitespace
 		    (cl-incf arg))))
       (cl-multiple-value-bind (doc arg-alist)
-	  (cl-case openfoam-doc-dimension-set-elements
-	    (unit-names
-	     (cl-values "[KILOGRAM METRE SECOND KELVIN MOLE AMPERE CANDELA]"
-			'((0  1  9)
-			  (1 10 15)
-			  (2 16 22)
-			  (3 23 29)
-			  (4 30 34)
-			  (5 35 41)
-			  (6 42 49))))
-	    (unit-symbols
-	     (cl-values "[kg m s K mol A cd]"
-			'((0  1  3)
-			  (1  4  5)
-			  (2  6  7)
-			  (3  8  9)
-			  (4 10 13)
-			  (5 14 15)
-			  (6 16 18))))
-	    (dimension-names
-	     (cl-values "[MASS LENGTH TIME THERMODYNAMIC-TEMPERATURE AMOUNT-OF-SUBSTANCE ELECTRIC-CURRENT LUMINOUS-INTENSITY]"
-			'((0  1  5)
-			  (1  6 12)
-			  (2 13 17)
-			  (3 18 43)
-			  (4 44 63)
-			  (5 64 80)
-			  (6 81 99))))
-	    (dimension-symbols
-	     (cl-values "[M L T Θ N I J]"
-			'((0  1  2)
-			  (1  3  4)
-			  (2  5  6)
-			  (3  7  8)
-			  (4  9 10)
-			  (5 11 12)
-			  (6 13 14)))))
+	  (cl-values-list
+	   (cl-rest
+	    (cond ((assq openfoam-doc-dimension-set-elements
+			 openfoam-eldoc-dimension-set-alist))
+		  ((consp openfoam-doc-dimension-set-elements)
+		   (let ((new (cons openfoam-doc-dimension-set-elements
+				    (openfoam-eldoc-compile-dimension-set
+				     openfoam-doc-dimension-set-elements))))
+		     (push new openfoam-eldoc-dimension-set-alist)
+		     new)))))
 	(when (and doc arg-alist)
 	  (set-text-properties 0 (length doc) () doc)
 	  (when-let ((pos (cl-rest (assoc arg arg-alist #'eql))))
