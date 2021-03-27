@@ -238,7 +238,7 @@ as data."
   :group 'openfoam)
 
 (defvar openfoam-poly-c++-innermode)
-(defvar openfoam-poly-mode)
+(defvar openfoam-c++-minor-mode)
 
 ;; https://polymode.github.io/
 (defun openfoam-poly-setup ()
@@ -259,8 +259,8 @@ as data."
 	:tail-adjust-face nil
 	:body-indent-offset (lambda () openfoam-basic-offset)
 	:adjust-face nil))
-    (unless (boundp 'openfoam-poly-mode)
-      (define-polymode openfoam-poly-mode nil
+    (unless (boundp 'openfoam-c++-minor-mode)
+      (define-polymode openfoam-c++-minor-mode nil
 	"Minor mode for editing C++ code in OpenFOAM data file buffers."
 	:hostmode nil
 	:innermodes '(openfoam-poly-c++-innermode)
@@ -530,7 +530,7 @@ closing ‘]’ character."
   (eldoc-mode 1)
   ;; Enable Polymode after setting up the host mode.
   (when (eq openfoam-verbatim-text-mode 'polymode)
-    (funcall #'openfoam-poly-mode 1))
+    (funcall #'openfoam-c++-minor-mode 1))
   ())
 
 ;;;###autoload
