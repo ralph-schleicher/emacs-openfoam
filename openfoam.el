@@ -290,7 +290,7 @@ closing ‘]’ character."
       (when (eql (char-after start) ?\[)
 	start))))
 
-(defcustom openfoam-documentation-dimension-set-elements 'unit-names
+(defcustom openfoam-doc-dimension-set-elements 'unit-names
   "How to document the elements of a dimension set."
   :type '(choice (const :tag "Unit names" unit-names)
 		 (const :tag "Unit symbols" unit-symbols)
@@ -333,7 +333,7 @@ closing ‘]’ character."
 		      (< pos (point))) ;whitespace
 		    (cl-incf arg))))
       (cl-multiple-value-bind (doc arg-alist)
-	  (cl-case openfoam-documentation-dimension-set-elements
+	  (cl-case openfoam-doc-dimension-set-elements
 	    (unit-names
 	     (cl-values "[KILOGRAM METRE SECOND KELVIN MOLE AMPERE CANDELA]"
 			'((0  1  9)
