@@ -70,11 +70,12 @@
 	(t
 	 number)))
 
-(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
-  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
-  (if (memq system-type '(windows-nt ms-dos))
-      (cl-equalp file-name-1 file-name-2)
-    (string= file-name-1 file-name-2)))
+;;;; Indentation for Data Files
+
+(defcustom openfoam-basic-offset 4
+  "The indentation increment."
+  :type 'integer
+  :group 'openfoam)
 
 (defsubst openfoam-skip-forward ()
   "Move forward across comments and whitespace characters.
@@ -99,13 +100,6 @@ The code assumes that point is not inside a string or comment."
 		(and (eql (char-before) ?$)
 		     (eql (char-after) ?\{)))))
        t))
-
-;;;; Indentation for Data Files
-
-(defcustom openfoam-basic-offset 4
-  "The indentation increment."
-  :type 'integer
-  :group 'openfoam)
 
 ;; Primitive dictionary entries are terminated by a ‘;’ character but
 ;; this may conflict with ‘;’ in verbatim text.  However, verbatim
@@ -543,6 +537,12 @@ descriptions.")
 (defalias '∇-mode 'openfoam-mode)
 
 ;;;; Data Files
+
+(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
+  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
+  (if (memq system-type '(windows-nt ms-dos))
+      (cl-equalp file-name-1 file-name-2)
+    (string= file-name-1 file-name-2)))
 
 (defcustom openfoam-data-file-template "\
 //  =========                 |  -*- OpenFOAM -*-
