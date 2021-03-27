@@ -226,7 +226,7 @@ Run the ‘c-set-style’ command to change the indentation style."
   ;; That's important.  Otherwise, Polymode doesn't get the indentation right.
   (setq indent-tabs-mode nil))
 
-(defcustom openfoam-verbatim-text-mode 'polymode
+(defcustom openfoam-verbatim-text-mode nil
   "How to indent and fontify verbatim text blocks in OpenFOAM data files.
 A value of ‘polymode’ means to use the Polymode package for editing
 verbatim text in OpenFOAM C++ mode; ‘string’ means to treat verbatim
