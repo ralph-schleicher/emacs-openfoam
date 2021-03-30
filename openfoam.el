@@ -120,7 +120,8 @@ The code assumes that point is not inside a string or comment."
   "Grammer table for SMIE.")
 
 (defun openfoam-smie-rules (method arg)
-  "Indentation rules for SMIE; see ‘smie-rules-function’."
+  "Indentation rules for SMIE; see ‘smie-rules-function’.
+Arguments METHOD and ARG are documented there, too."
   (pcase (cons method arg)
     ('(:elem . basic)
      openfoam-basic-offset)
@@ -697,9 +698,11 @@ Hook called by ‘openfoam-insert-data-file-header’."
   :group 'openfoam)
 
 (defcustom openfoam-insert-data-file-header-line-limit 100
-  "Number of lines searched at the beginning of a file to find a position
-for inserting the OpenFOAM data file header.  A negative value counts
-from the end, zero means to search the whole file."
+  "Number of lines searched for inserting the OpenFOAM data file header.
+A positive value means to search not more than that many lines at the
+beginning of a file to find a suitable buffer position for the OpenFOAM
+data file header.  A negative value counts from the end, zero means to
+search the whole file."
   :type 'integer
   :group 'openfoam)
 
@@ -709,12 +712,12 @@ from the end, zero means to search the whole file."
 (defun openfoam-insert-data-file-header (&optional here)
   "Insert an OpenFOAM data file header into the current buffer.
 
-With prefix argument, insert the data file header at the current line.
-Otherwise, run ‘openfoam-insert-data-file-header-position-hook’ to find
-a suitable buffer position.  If no hook function is configured, search
-for the ‘Code:’ special comment and insert the data file header after
-it.  If ‘Code:’ is not found, insert the data file header before the
-first dictionary entry.
+With prefix argument HERE, insert the data file header at the current
+line.  Otherwise, run ‘openfoam-insert-data-file-header-position-hook’
+to find a suitable buffer position.  If no hook function is configured,
+search for the ‘Code:’ special comment and insert the data file header
+after it.  If ‘Code:’ is not found, insert the data file header before
+the first dictionary entry.
 
 While looking for a suitable buffer position, the special variable
 ‘openfoam-insert-data-file-header-limit’ is bound to the buffer position
