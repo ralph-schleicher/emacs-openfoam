@@ -45,10 +45,10 @@
 (require 'eldoc)
 
 ;; Declare functions loaded at run-time.
-(declare-function define-polymode "polymode" (mode &optional parent doc &rest body))
-(declare-function define-hostmode (name &optional parent doc &rest key-args))
-(declare-function define-innermode "polymode-core" (name &optional parent doc &rest key-args))
-(declare-function pm-base-buffer "polymode-core" ())
+(declare-function define-polymode "ext:polymode" (mode &optional parent doc &rest body))
+(declare-function define-hostmode "ext:polymode-core" (name &optional parent doc &rest key-args))
+(declare-function define-innermode "ext:polymode-core" (name &optional parent doc &rest key-args))
+(declare-function pm-base-buffer "ext:polymode-core" ())
 
 (defgroup openfoam nil
   "OpenFOAM files and directories."
