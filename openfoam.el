@@ -1,4 +1,4 @@
-;;; openfoam.el --- OpenFOAM files and directories.  -*- lexical-binding: t -*-
+;;; openfoam.el --- OpenFOAM files and directories  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021 Ralph Schleicher
 
