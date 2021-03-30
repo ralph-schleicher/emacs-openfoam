@@ -44,6 +44,12 @@
 (require 'smie)
 (require 'eldoc)
 
+;; Declare functions loaded at run-time.
+(declare-function define-polymode "polymode" (mode &optional parent doc &rest body))
+(declare-function define-hostmode (name &optional parent doc &rest key-args))
+(declare-function define-innermode "polymode-core" (name &optional parent doc &rest key-args))
+(declare-function pm-base-buffer "polymode-core" ())
+
 (defgroup openfoam nil
   "OpenFOAM files and directories."
   :group 'languages
@@ -234,6 +240,7 @@ as data."
 
 (defvar openfoam-poly-c++-innermode)
 (defvar openfoam-c++-minor-mode)
+(declare-function openfoam-c++-minor-mode "openfoam" (arg))
 
 ;; https://polymode.github.io/
 (defun openfoam-poly-setup ()
