@@ -43,6 +43,7 @@
 (require 'package)
 (require 'smie)
 (require 'eldoc)
+(require 'shell)
 
 ;; Declare functions loaded at run-time.
 (declare-function define-polymode "ext:polymode" (mode &optional parent doc &rest body))
@@ -422,7 +423,10 @@ descriptions.")
     ["Insert Header" openfoam-insert-data-file-header
      :help "Insert an OpenFOAM data file header into the current buffer"]
     ["Insert Dimension Set" openfoam-insert-dimension-set
-     :help "Insert a dimension set at point"]))
+     :help "Insert a dimension set at point"]
+    "--"
+    ["Run Shell..." openfoam-shell
+     :help "Run an inferior shell in an OpenFOAM case directory"]))
 
 (defvar openfoam-mode-syntax-table nil
   "Syntax table used in OpenFOAM mode buffers.")
@@ -878,6 +882,177 @@ Argument DIRECTORY is the directory file name."
       (create-data-file "system/fvSchemes")
       (create-data-file "system/fvSolution"))
     directory))
+
+(defcustom openfoam-project-directory-alist ()
+  "Alist of OpenFOAM project directories.
+List elements are cons cells of the form ‘(KEY . DIRECTORY)’ where KEY
+is a symbol or number and DIRECTORY is the associated OpenFOAM project
+directory (a string).  See also ‘openfoam-default-project-directory’."
+  :type '(alist :key-type (choice symbol number)
+		:value-type directory)
+  :group 'openfoam)
+
+(defcustom openfoam-default-project-directory nil
+  "The default OpenFOAM project directory.
+Value is either a directory (a string) or the key for looking up a
+project directory in ‘openfoam-project-directory-alist’."
+  :type '(choice directory symbol number)
+  :group 'openfoam)
+
+(defun openfoam-default-project-directory (&optional must-match)
+  "Return the default OpenFOAM project directory.
+The project directory is looked up in the following order:
+
+  1. The final value of ‘openfoam-default-project-directory’.
+  2. The first element of ‘openfoam-project-directory-alist’.
+  3. The value of the environment variable ‘WM_PROJECT_DIR’.
+
+If optional argument MUST-MATCH is non-nil, only return an existing
+directory."
+  (cl-flet ((p (object)
+	      (and (stringp object)
+		   (or (not must-match)
+		       (file-directory-p object))
+		   (file-name-as-directory object))))
+    ;; The first match wins.
+    (or (if (stringp openfoam-default-project-directory)
+	    (p openfoam-default-project-directory)
+	  (p (cdr (assoc openfoam-default-project-directory
+			 openfoam-project-directory-alist #'eql))))
+	(let (directory)
+	  (dolist (cell openfoam-project-directory-alist)
+	    (when-let ((found (and (null directory) (p (cdr cell)))))
+	      (setq directory found)))
+	  directory)
+	(p (getenv "WM_PROJECT_DIR")))))
+
+(defcustom openfoam-shell-save-project-directory t
+  "Whether or not to save the OpenFOAM project directory.
+If non-nil, the ‘openfoam-shell’ command will save the selected OpenFOAM
+project directory for a case directory in the file ‘.WM_PROJECT_DIR’ or
+‘.OpenFOAM/WM_PROJECT_DIR’."
+  :type 'boolean
+  :group 'openfoam)
+
+(defun openfoam-shell-read-wm-project-dir (case-directory)
+  "Read the OpenFOAM project directory for CASE-DIRECTORY."
+  (when-let ((file-name (or (let ((file-name (expand-file-name
+					      ".OpenFOAM/WM_PROJECT_DIR"
+					      case-directory)))
+			      (and (file-exists-p file-name) file-name))
+			    (let ((file-name (expand-file-name
+					      ".WM_PROJECT_DIR"
+					      case-directory)))
+			      (and (file-exists-p file-name) file-name)))))
+    (with-temp-buffer
+      (insert-file-contents file-name)
+      (let* ((start (progn
+		      (goto-char (point-min))
+		      (if (looking-at "[ \t\n\r]+")
+			  (match-end 0)
+			(point))))
+	     (end (progn
+		    (goto-char (point-max))
+		    (if (looking-back "[ \t\n\r]+" start t)
+			(match-beginning 0)
+		      (point)))))
+	(when (< start end)
+	  (buffer-substring-no-properties start end))))))
+
+(defun openfoam-shell-write-wm-project-dir (case-directory project-directory)
+  "Save the OpenFOAM project directory for CASE-DIRECTORY.
+A newline character is appended to PROJECT-DIRECTORY."
+  (let ((file-name (or (let ((file-name (expand-file-name
+					 ".OpenFOAM/WM_PROJECT_DIR"
+					 case-directory)))
+			 (and (file-exists-p file-name) file-name))
+		       (let ((file-name (expand-file-name
+					 ".WM_PROJECT_DIR"
+					 case-directory)))
+			 (and (file-exists-p file-name) file-name))
+		       ;; TODO: Consider using ‘if-let*’ and
+		       ;; ‘when-let*’ (see below); requires
+		       ;; Emacs 26.1.
+		       (if-let ((dir (expand-file-name ".OpenFOAM" case-directory))
+				(dirp (and dir (file-directory-p dir))))
+			   (expand-file-name "WM_PROJECT_DIR" dir)
+			 (expand-file-name ".WM_PROJECT_DIR" case-directory)))))
+    (with-temp-buffer
+      (set-visited-file-name file-name t)
+      (insert project-directory ?\n)
+      (set-buffer-modified-p t)
+      (save-buffer 0))
+    (when-let ((buffer (get-file-buffer file-name)))
+      (with-current-buffer buffer
+	(revert-buffer t t t)))))
+
+(defcustom openfoam-shell-prompt-delay 0.1
+  "Time to wait before sending artificial commands to the shell."
+  :type 'number
+  :group 'openfoam)
+
+;;;###autoload
+(defun openfoam-shell (case-directory project-directory)
+  "Run a shell in CASE-DIRECTORY and initialize it for PROJECT-DIRECTORY.
+With prefix argument, always ask the user to confirm the case directory
+and project directory."
+  (interactive
+   (let (case-dir project-dir)
+     ;; Attempt to determine the case directory.
+     (setq case-dir (openfoam-case-directory
+		     (or buffer-file-name
+			 default-directory)))
+     (when (or (null case-dir) current-prefix-arg)
+       (setq case-dir (file-name-as-directory
+		       (read-file-name
+			"OpenFOAM case directory: "
+			(or case-dir
+			    default-directory
+			    (expand-file-name "~"))
+			nil t nil #'file-directory-p))))
+     ;; Attempt to determine the project directory.
+     (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir))
+				 (dirp (and dir (file-directory-p dir))))
+			(file-name-as-directory dir))))
+       (if (or (null saved-dir) current-prefix-arg)
+	   (progn
+	     (setq project-dir (file-name-as-directory
+				(read-file-name
+				 (format "OpenFOAM project directory for case directory ‘%s’: " case-dir)
+				 (or saved-dir
+				     (openfoam-default-project-directory t))
+				 nil t nil #'file-directory-p)))
+	     (when (and openfoam-shell-save-project-directory
+			(or (null saved-dir)
+			    (not (openfoam-file-name-equal-p
+				  project-dir saved-dir))))
+	       (openfoam-shell-write-wm-project-dir case-dir (directory-file-name project-dir))))
+	 (setq project-dir saved-dir)))
+     (list case-dir project-dir)))
+  ;; Function body.
+  (let* ((default-directory (or case-directory
+				default-directory
+				(expand-file-name "~")))
+	 (buffer-name (concat "*" (file-name-nondirectory
+				   (directory-file-name
+				    project-directory))
+			      " " (directory-file-name
+				   default-directory)
+			      "*")))
+    (shell buffer-name)
+    (let ((buffer (get-buffer buffer-name)))
+      (with-current-buffer buffer
+	(let* ((cshp (or (string-equal shell--start-prog "csh")
+			 (string-equal shell--start-prog "tcsh")))
+	       (source (if cshp "source" "."))
+	       (startup (expand-file-name
+			 (if cshp "etc/cshrc" "etc/bashrc")
+			 project-directory)))
+	  (when (file-readable-p startup)
+	    (sleep-for openfoam-shell-prompt-delay)
+	    ;; TODO: Quote file name.
+	    (insert source ?\s startup)
+	    (comint-send-input nil t)))))))
 
 (provide 'openfoam)
 
