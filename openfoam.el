@@ -124,7 +124,7 @@ The code assumes that point is not inside a string or comment."
     `((entries (entries ,openfoam-smie-end entries)
 	       ("#{" entries "#}")))
     `((assoc ,openfoam-smie-end))))
-  "Grammer table for SMIE.")
+  "Grammar table for SMIE.")
 
 (defun openfoam-smie-rules (method arg)
   "Indentation rules for SMIE; see ‘smie-rules-function’.
@@ -591,7 +591,7 @@ The following substitutions are made:
      %Z  universal date and time, i.e. ‘%Y%m%dT%H%M%SZ’ time format
      %(  value of Emacs Lisp expression
      %|  existing file contents
-     %%  litereal %
+     %%  literal %
 
 For date and time formats, a ‘*’ modifier after the ‘%’ means universal
 date and time."
