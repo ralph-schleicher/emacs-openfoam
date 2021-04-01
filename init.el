@@ -2,6 +2,16 @@
 
 (require 'openfoam-autoloads)
 
+(setq openfoam-project-directory-alist
+      '(;; OpenFOAM Foundation releases.
+	(8 . "/opt/OpenFOAM/OpenFOAM-8")
+	(7 . "/opt/OpenFOAM/OpenFOAM-7")
+	(6 . "/opt/OpenFOAM/OpenFOAM-6")
+	;; ESI OpenCFD releases.
+	(v1912 . "/opt/OpenFOAM/OpenFOAM-v1912"))
+      ;; The default is OpenFOAM 8.
+      openfoam-default-project-directory 8)
+
 (setq openfoam-data-file-template
       (let ((copyright-notice
 	     (if (rs:at-home-p)
