@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24671 3599 409139
-;;;;;;  404000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24678 15194 164013
+;;;;;;  552000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-c++-mode "openfoam" "\
@@ -26,12 +26,12 @@ See ‘openfoam-data-file-template’ for more information." t nil)
 (autoload 'openfoam-insert-data-file-header "openfoam" "\
 Insert an OpenFOAM data file header into the current buffer.
 
-With prefix argument, insert the data file header at the current line.
-Otherwise, run ‘openfoam-insert-data-file-header-position-hook’ to find
-a suitable buffer position.  If no hook function is configured, search
-for the ‘Code:’ special comment and insert the data file header after
-it.  If ‘Code:’ is not found, insert the data file header before the
-first dictionary entry.
+With prefix argument HERE, insert the data file header at the current
+line.  Otherwise, run ‘openfoam-insert-data-file-header-position-hook’
+to find a suitable buffer position.  If no hook function is configured,
+search for the ‘Code:’ special comment and insert the data file header
+after it.  If ‘Code:’ is not found, insert the data file header before
+the first dictionary entry.
 
 While looking for a suitable buffer position, the special variable
 ‘openfoam-insert-data-file-header-limit’ is bound to the buffer position
@@ -50,6 +50,13 @@ Create an OpenFOAM case directory.
 Argument DIRECTORY is the directory file name.
 
 \(fn DIRECTORY)" t nil)
+
+(autoload 'openfoam-shell "openfoam" "\
+Run a shell in CASE-DIRECTORY and initialize it for PROJECT-DIRECTORY.
+With prefix argument, always ask the user to confirm the case directory
+and project directory.
+
+\(fn CASE-DIRECTORY PROJECT-DIRECTORY)" t nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "openfoam" '("openfoam-")))
 

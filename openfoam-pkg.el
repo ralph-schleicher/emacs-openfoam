@@ -1,6 +1,6 @@
 ;;; -*- no-byte-compile: t -*-
 
-(define-package "openfoam" "0.6"
+(define-package "openfoam" "0.7"
   "OpenFOAM files and directories."
   '((emacs "25.1")
     (polymode "0.2"))
