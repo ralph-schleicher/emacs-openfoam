@@ -57,17 +57,6 @@ clean:
 
 ### Maintenance
 
-dist_FILES = openfoam.el init.el
-
-.PHONY: dist
-dist: $(TARNAME).tar
-$(TARNAME).tar: check $(dist_FILES)
-	rm -fr $(TARNAME)
-	mkdir $(TARNAME)
-	install -c -m 644 $(dist_FILES) $(TARNAME)
-	rm -f $(TARNAME).tar
-	tar -cf $(TARNAME).tar --owner=0 --group=0 $(TARNAME)
-
 .PHONY: tag
 tag: all
 	@if test 0 != `svn status -q | grep -v "^ " | wc -l` ; then \
