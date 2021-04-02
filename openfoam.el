@@ -908,7 +908,7 @@ The project directory is looked up in the following order:
   3. The value of the environment variable ‘WM_PROJECT_DIR’.
 
 If optional argument MUST-MATCH is non-nil, only return an existing
-directory."
+directory.  Value is nil if no project directory can be found."
   (cl-flet ((p (object)
 	      (and (stringp object)
 		   (or (not must-match)
