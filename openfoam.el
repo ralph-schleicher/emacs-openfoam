@@ -926,12 +926,15 @@ directory."
 	  directory)
 	(p (getenv "WM_PROJECT_DIR")))))
 
-(defcustom openfoam-shell-save-project-directory t
+(defcustom openfoam-shell-save-project-directory 'ask
   "Whether or not to save the OpenFOAM project directory.
 If non-nil, the ‘openfoam-shell’ command will save the selected OpenFOAM
 project directory for a case directory in the file ‘.WM_PROJECT_DIR’ or
-‘.OpenFOAM/WM_PROJECT_DIR’."
-  :type 'boolean
+‘.OpenFOAM/WM_PROJECT_DIR’ for future use.  Special value ‘ask’ means
+to ask the user before saving the project directory."
+  :type '(choice (const :tag "Always" t)
+		 (const :tag "Never" nil)
+		 (const :tag "Ask" ask))
   :group 'openfoam)
 
 (defun openfoam-shell-read-wm-project-dir (case-directory)
@@ -999,17 +1002,18 @@ and project directory."
   (interactive
    (let (case-dir project-dir)
      ;; Attempt to determine the case directory.
-     (setq case-dir (openfoam-case-directory
-		     (or buffer-file-name
-			 default-directory)))
+     (setq case-dir (when-let ((file-name-or-directory
+				(or buffer-file-name
+				    default-directory)))
+		      (openfoam-case-directory file-name-or-directory)))
      (when (or (null case-dir) current-prefix-arg)
        (setq case-dir (file-name-as-directory
-		       (read-file-name
+		       (read-directory-name
 			"OpenFOAM case directory: "
 			(or case-dir
 			    default-directory
-			    (expand-file-name "~"))
-			nil t nil #'file-directory-p))))
+			    (expand-file-name "~/"))
+			nil t nil))))
      ;; Attempt to determine the project directory.
      (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir))
 				 (dirp (and dir (file-directory-p dir))))
@@ -1017,15 +1021,18 @@ and project directory."
        (if (or (null saved-dir) current-prefix-arg)
 	   (progn
 	     (setq project-dir (file-name-as-directory
-				(read-file-name
+				(read-directory-name
 				 (format "OpenFOAM project directory for case directory ‘%s’: " case-dir)
 				 (or saved-dir
-				     (openfoam-default-project-directory t))
-				 nil t nil #'file-directory-p)))
-	     (when (and openfoam-shell-save-project-directory
-			(or (null saved-dir)
+				     (openfoam-default-project-directory t)
+				     (expand-file-name "~/"))
+				 nil t nil)))
+	     (when (and (or (null saved-dir)
 			    (not (openfoam-file-name-equal-p
-				  project-dir saved-dir))))
+				  project-dir saved-dir)))
+			(if (eq openfoam-shell-save-project-directory 'ask)
+			    (y-or-n-p "Save OpenFOAM project directory? ")
+			  openfoam-shell-save-project-directory))
 	       (openfoam-shell-write-wm-project-dir case-dir (directory-file-name project-dir))))
 	 (setq project-dir saved-dir)))
      (list case-dir project-dir)))
