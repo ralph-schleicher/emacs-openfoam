@@ -4,6 +4,9 @@
 
 ;; Author: Ralph Schleicher <rs@ralph-schleicher.de>
 ;; Keywords: languages
+;; Package-Version: 0.7.1
+;; Package-Requires: ((emacs "25.1") (polymode "0.2"))
+;; URL: https://github.com/ralph-schleicher/emacs-openfoam
 
 ;; This file is not part of GNU Emacs.
 
