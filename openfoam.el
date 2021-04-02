@@ -1037,16 +1037,18 @@ and project directory."
 	 (setq project-dir saved-dir)))
      (list case-dir project-dir)))
   ;; Function body.
-  (let* ((default-directory (or case-directory
-				default-directory
-				(expand-file-name "~")))
+  (let* ((working-directory (file-name-as-directory
+			     (or case-directory
+				 default-directory
+				 (expand-file-name "~"))))
 	 (buffer-name (concat "*" (file-name-nondirectory
 				   (directory-file-name
 				    project-directory))
 			      " " (directory-file-name
-				   default-directory)
+				   working-directory)
 			      "*")))
-    (shell buffer-name)
+    (let ((default-directory working-directory))
+      (shell buffer-name))
     (let ((buffer (get-buffer buffer-name)))
       (with-current-buffer buffer
 	(let* ((cshp (or (string-equal shell--start-prog "csh")
