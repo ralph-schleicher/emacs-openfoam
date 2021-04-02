@@ -21,18 +21,14 @@
 
 ## Code:
 
-PACKAGE = openfoam
-VERSION = $(shell cat version.expr)
-TARNAME = $(PACKAGE)-$(VERSION)
+PACKAGE := openfoam
+VERSION := $(shell grep -h ';;;* *Package-Version:' openfoam.el | sed 's/.*: *//')
+TARNAME := $(PACKAGE)-$(VERSION)
 
 ### Rules
 
 .PHONY: all
-all: openfoam-pkg.el autoloads
-
-openfoam-pkg.el: openfoam-pkg.el.in version.expr
-	sed -e 's/@PACKAGE@/$(PACKAGE)/g' \
-	    -e 's/@VERSION@/$(VERSION)/g' $< > $@~ && mv -f $@~ $@
+all: autoloads
 
 .PHONY: autoloads
 autoloads: openfoam-autoloads.el
@@ -57,12 +53,11 @@ check-melpa: all
 
 .PHONY: clean
 clean:
-	rm -f openfoam-pkg.el
 	rm -f *.elc
 
 ### Maintenance
 
-dist_FILES = openfoam.el openfoam-pkg.el init.el
+dist_FILES = openfoam.el init.el
 
 .PHONY: dist
 dist: $(TARNAME).tar
