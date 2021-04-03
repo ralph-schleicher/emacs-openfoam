@@ -1002,10 +1002,8 @@ A newline character is appended to PROJECT-DIRECTORY."
       ;; This is like ‘beginning-of-line’ but ignores
       ;; any text motion restrictions.
       (forward-line 0)
-      (let ((point (point)))
-	(unless (looking-at shell-prompt-pattern)
-	  (accept-process-output process)
-	  (goto-char point))))
+      (unless (looking-at shell-prompt-pattern)
+	(accept-process-output process)))
     ;; Leave point after the shell prompt.
     (goto-char last-output)))
 
