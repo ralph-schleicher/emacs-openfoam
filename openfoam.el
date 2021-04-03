@@ -992,10 +992,22 @@ A newline character is appended to PROJECT-DIRECTORY."
       (with-current-buffer buffer
 	(revert-buffer t t t)))))
 
-(defcustom openfoam-shell-prompt-delay 0.1
-  "Time to wait before sending artificial commands to the shell."
-  :type 'number
-  :group 'openfoam)
+(defun openfoam-shell-wait-for-prompt ()
+  "Wait for the shell prompt and leave point after it."
+  (let* ((buffer (current-buffer))
+	 (process (get-buffer-process buffer))
+	 (last-output (process-mark process)))
+    (save-excursion
+      (goto-char last-output)
+      ;; This is like ‘beginning-of-line’ but ignores
+      ;; any text motion restrictions.
+      (forward-line 0)
+      (let ((point (point)))
+	(unless (looking-at shell-prompt-pattern)
+	  (accept-process-output process)
+	  (goto-char point))))
+    ;; Leave point after the shell prompt.
+    (goto-char last-output)))
 
 ;;;###autoload
 (defun openfoam-shell (case-directory project-directory)
@@ -1061,7 +1073,7 @@ and project directory."
 			 (if cshp "etc/cshrc" "etc/bashrc")
 			 project-directory)))
 	  (when (file-readable-p startup)
-	    (sleep-for openfoam-shell-prompt-delay)
+	    (openfoam-shell-wait-for-prompt)
 	    ;; TODO: Quote file name.
 	    (insert source ?\s startup)
 	    (comint-send-input nil t)))))))
