@@ -1074,8 +1074,7 @@ and project directory."
 			 project-directory)))
 	  (when (file-readable-p startup)
 	    (openfoam-shell-wait-for-prompt)
-	    ;; TODO: Quote file name.
-	    (insert source ?\s startup)
+	    (insert source ?\s (comint-quote-filename startup))
 	    (comint-send-input nil t)))
 	;; Propagate the program search path from the shell to Emacs
 	;; so that command completion works as expected.
