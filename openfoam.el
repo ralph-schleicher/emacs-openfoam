@@ -1118,4 +1118,9 @@ and project directory."
 
 (provide 'openfoam)
 
+
+;; local variables:
+;; byte-compile-warnings: (not make-local)
+;; end:
+
 ;;; openfoam.el ends here
