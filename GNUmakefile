@@ -22,7 +22,7 @@
 ## Code:
 
 PACKAGE := openfoam
-VERSION := $(shell grep -h ';;;* *Package-Version:' openfoam.el | sed 's/.*: *//')
+VERSION := $(shell grep -h ';;;* *Version:' openfoam.el | sed 's/.*: *//')
 TARNAME := $(PACKAGE)-$(VERSION)
 
 EMACS = emacs
