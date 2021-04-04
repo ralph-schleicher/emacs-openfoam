@@ -25,6 +25,8 @@ PACKAGE := openfoam
 VERSION := $(shell grep -h ';;;* *Package-Version:' openfoam.el | sed 's/.*: *//')
 TARNAME := $(PACKAGE)-$(VERSION)
 
+EMACS = emacs
+
 ### Rules
 
 .PHONY: all
@@ -33,11 +35,11 @@ all: autoloads
 .PHONY: autoloads
 autoloads: openfoam-autoloads.el
 openfoam-autoloads.el: generate-autoloads.el openfoam.el
-	emacs --batch --load generate-autoloads.el
+	$(EMACS) --batch --load generate-autoloads.el
 
 .PHONY: check
 check: all
-	emacs --batch --funcall batch-byte-compile openfoam.el
+	$(EMACS) --batch --funcall batch-byte-compile openfoam.el
 
 .PHONY: check-melpa
 check-melpa: all
