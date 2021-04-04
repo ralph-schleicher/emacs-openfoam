@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24680 47418 440187
-;;;;;;  850000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24681 58381 233977
+;;;;;;  236000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-c++-mode "openfoam" "\
@@ -17,7 +17,7 @@ Major mode for OpenFOAM data files.
 
 \(fn)" t nil)
 
-(defalias '∇-mode 'openfoam-mode)
+(defalias '∇-mode #'openfoam-mode)
 
 (autoload 'openfoam-apply-data-file-template "openfoam" "\
 Apply the OpenFOAM data file template to the current buffer.
