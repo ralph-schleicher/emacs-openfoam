@@ -549,7 +549,7 @@ descriptions.")
   ())
 
 ;;;###autoload
-(defalias '∇-mode 'openfoam-mode)
+(defalias '∇-mode #'openfoam-mode)
 
 ;;;; Data Files
 
