@@ -1051,6 +1051,42 @@ that you can run a separate shell for each case directory."
      (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir))
 				 (dirp (and dir (file-directory-p dir))))
 			(file-name-as-directory dir))))
+       ;; If SAVED-DIR is non-nil but does not exist, consult
+       ;; ‘openfoam-project-directory-alist’ for an alternative
+       ;; installation directory.  This may happen if a project
+       ;; directory is moved or renamed or a case directory is
+       ;; imported from another machine.
+       (when (and saved-dir (not (file-directory-p saved-dir)) openfoam-project-directory-alist)
+	 (let ((project (file-name-nondirectory (directory-file-name saved-dir)))
+	       ;; The matching cons cell in ‘openfoam-project-directory-alist’.
+	       (found nil))
+	   ;; Try the full project name.
+	   (unless found
+	     (dolist (cell openfoam-project-directory-alist)
+	       (when (and (not found)
+			  (openfoam-file-name-equal-p
+			   (file-name-nondirectory
+			    (directory-file-name
+			     (cdr cell)))
+			   project)
+			  (file-directory-p (cdr cell)))
+		 (setq found cell))))
+	   ;; Try the project version only.
+	   (unless found
+	     (let ((regexp (concat "[-_]"
+				   (regexp-opt
+				    (mapcar (lambda (cell)
+					      (format "%s" (car cell)))
+					    openfoam-project-directory-alist))
+				   "\\'")))
+	       (when (string-match regexp project)
+		 (let ((val (read-from-string project (1+ (match-beginning 0)))))
+		   (when (= (cdr val) (length project))
+		     (setq found (assoc (car val) openfoam-project-directory-alist)))))))
+	   ;; Replace SAVED-DIR.  TODO: Consider informing the user
+	   ;; about the updated project directory.
+	   (when found
+	     (setq saved-dir (file-name-as-directory (cdr found))))))
        (if (or (null saved-dir) current-prefix-arg)
 	   (progn
 	     (setq project-dir (file-name-as-directory
