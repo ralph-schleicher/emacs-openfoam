@@ -929,6 +929,59 @@ directory.  Value is nil if no project directory can be found."
 	  directory)
 	(p (getenv "WM_PROJECT_DIR")))))
 
+(defun openfoam-other-project-directory (file-name-or-directory &optional must-match no-keys)
+  "Find an OpenFOAM project directory for FILE-NAME-OR-DIRECTORY.
+The project directory is looked up in ‘openfoam-project-directory-alist’
+in the following order:
+
+  1. By comparing the project directory names without installation
+     prefix.  Case is not significant.  For example, ‘~/openfoam-8’
+     and ‘/opt/OpenFOAM-8’ are considered equal.
+  2. By comparing the ‘openfoam-project-directory-alist’ keys with
+     the version number part of the project.
+
+If optional second argument MUST-MATCH is non-nil, only return an
+existing directory.  If optional third argument NO-KEYS is non-nil,
+omit the version number comparison.
+
+Value is nil if no project directory can be found."
+  (when openfoam-project-directory-alist
+    (let ((project (file-name-nondirectory
+		    (directory-file-name
+		     file-name-or-directory)))
+	  ;; The matching cons cell in ‘openfoam-project-directory-alist’.
+	  (found nil))
+      ;; Compare the project directory names.
+      (dolist (cell openfoam-project-directory-alist)
+	(when (and (not found)
+		   (cl-equalp (file-name-nondirectory
+			       (directory-file-name
+				(cdr cell)))
+			      project)
+		   (or (not must-match)
+		       (file-directory-p (cdr cell))))
+	  (setq found cell)))
+      ;; Try the version number only.
+      (unless (or found no-keys)
+	(let ((regexp (concat "[-_]"
+			      (regexp-opt
+			       (mapcar (lambda (cell)
+					 (format "%s" (car cell)))
+				       openfoam-project-directory-alist) t)
+			      "\\'")))
+	  (when (string-match regexp project)
+	    (let ((val (ignore-errors
+			 (read-from-string project (match-beginning 1)))))
+	      (when (and val (= (cdr val) (length project)))
+		(let* ((key (car val))
+		       (cell (assoc key openfoam-project-directory-alist #'eql)))
+		  (when (and cell (or (not must-match)
+				      (file-directory-p (cdr cell))))
+		    (setq found cell))))))))
+      ;; Return value.
+      (when found
+	(file-name-as-directory (cdr found))))))
+
 (defcustom openfoam-shell-save-project-directory 'ask
   "Whether or not to save the OpenFOAM project directory.
 If non-nil, the ‘openfoam-shell’ command will save the selected OpenFOAM
@@ -1051,42 +1104,15 @@ that you can run a separate shell for each case directory."
      (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir))
 				 (dirp (and dir (file-directory-p dir))))
 			(file-name-as-directory dir))))
-       ;; If SAVED-DIR is non-nil but does not exist, consult
-       ;; ‘openfoam-project-directory-alist’ for an alternative
-       ;; installation directory.  This may happen if a project
-       ;; directory is moved or renamed or a case directory is
+       ;; If SAVED-DIR is non-nil but does not exist, attempt to find
+       ;; an alternative installation directory.  This may happen if a
+       ;; project directory is moved or renamed or a case directory is
        ;; imported from another machine.
-       (when (and saved-dir (not (file-directory-p saved-dir)) openfoam-project-directory-alist)
-	 (let ((project (file-name-nondirectory (directory-file-name saved-dir)))
-	       ;; The matching cons cell in ‘openfoam-project-directory-alist’.
-	       (found nil))
-	   ;; Try the full project name.
-	   (unless found
-	     (dolist (cell openfoam-project-directory-alist)
-	       (when (and (not found)
-			  (openfoam-file-name-equal-p
-			   (file-name-nondirectory
-			    (directory-file-name
-			     (cdr cell)))
-			   project)
-			  (file-directory-p (cdr cell)))
-		 (setq found cell))))
-	   ;; Try the project version only.
-	   (unless found
-	     (let ((regexp (concat "[-_]"
-				   (regexp-opt
-				    (mapcar (lambda (cell)
-					      (format "%s" (car cell)))
-					    openfoam-project-directory-alist))
-				   "\\'")))
-	       (when (string-match regexp project)
-		 (let ((val (read-from-string project (1+ (match-beginning 0)))))
-		   (when (= (cdr val) (length project))
-		     (setq found (assoc (car val) openfoam-project-directory-alist)))))))
+       (when (and saved-dir (not (file-directory-p saved-dir)))
+	 (when-let ((other (openfoam-other-project-directory saved-dir t)))
 	   ;; Replace SAVED-DIR.  TODO: Consider informing the user
 	   ;; about the updated project directory.
-	   (when found
-	     (setq saved-dir (file-name-as-directory (cdr found))))))
+	   (setq saved-dir other)))
        (if (or (null saved-dir) current-prefix-arg)
 	   (progn
 	     (setq project-dir (file-name-as-directory
