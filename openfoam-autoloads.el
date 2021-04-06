@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24681 58381 233977
-;;;;;;  236000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24684 35320 613814
+;;;;;;  808000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-c++-mode "openfoam" "\
@@ -55,6 +55,19 @@ Argument DIRECTORY is the directory file name.
 Run a shell in CASE-DIRECTORY and initialize it for PROJECT-DIRECTORY.
 With prefix argument, always ask the user to confirm the case directory
 and project directory.
+
+If the user option ‘openfoam-shell-save-project-directory’ is non-nil,
+save the selected project directory inside the case directory so that
+future invocations of ‘openfoam-shell’ can pick up the same project
+directory again.
+
+The inferior shell is invoked via the ‘shell’ command with the initial
+working directory set to CASE-DIRECTORY.  After normal shell startup,
+the OpenFOAM specific startup script ‘PROJECT-DIRECTORY/etc/bashrc’ or
+‘PROJECT-DIRECTORY/etc/cshrc’ is read automatically.
+
+The shell buffer has a name of the form ‘*PROJECT CASE-DIRECTORY*’ so
+that you can run a separate shell for each case directory.
 
 \(fn CASE-DIRECTORY PROJECT-DIRECTORY)" t nil)
 
