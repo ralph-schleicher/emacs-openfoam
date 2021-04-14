@@ -4,7 +4,7 @@
 
 ;; Author: Ralph Schleicher <rs@ralph-schleicher.de>
 ;; Keywords: languages
-;; Version: 0.9
+;; Version: 0.9.1
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/ralph-schleicher/emacs-openfoam
 
