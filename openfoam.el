@@ -5,7 +5,7 @@
 ;; Author: Ralph Schleicher <rs@ralph-schleicher.de>
 ;; Keywords: languages
 ;; Version: 0.9
-;; Package-Requires: ((emacs "25.1") (polymode "0.2"))
+;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/ralph-schleicher/emacs-openfoam
 
 ;; This file is not part of GNU Emacs.
@@ -38,6 +38,14 @@
 ;; This package provides major modes for editing OpenFOAM data files
 ;; and C++ code.  There are also user commands for managing OpenFOAM
 ;; case directories.
+;;
+;; By default, verbatim text blocks in OpenFOAM data files are
+;; indented like data which yields acceptable results for C++ code.
+;; As an alternative, you can install the Polymode package from MELPA
+;; stable.  Polymode provides multiple major mode support for editing
+;; C++ code in verbatim text blocks.  OpenFOAM requires Polymode 0.2
+;; or newer.  To actually enable Polymode, customize the variable
+;; ‘openfoam-verbatim-text-mode’.
 
 ;;; Code:
 
