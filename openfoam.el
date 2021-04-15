@@ -1180,7 +1180,7 @@ that you can run a separate shell for each case directory."
 	    (save-excursion
 	      (goto-char start)
 	      (forward-line 1)
-	      (let ((ignore (concat "^" openfoam-shell-ignore-environment-regexp "="))
+	      (let ((ignore (concat "\\`" openfoam-shell-ignore-environment-regexp "="))
 		    (case-fold-search nil))
 		(while (re-search-forward "^[0-9A-Z_a-z]+=.*" nil t)
 		  (let ((str (match-string-no-properties 0)))
