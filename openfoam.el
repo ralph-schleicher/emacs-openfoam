@@ -556,9 +556,6 @@ descriptions.")
     (funcall #'openfoam-c++-minor-mode 1))
   ())
 
-;;;###autoload
-(defalias '∇-mode #'openfoam-mode)
-
 ;;;; Data Files
 
 (defun openfoam-file-name-equal-p (file-name-1 file-name-2)
