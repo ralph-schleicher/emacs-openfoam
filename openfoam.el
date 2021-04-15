@@ -46,6 +46,14 @@
 ;; C++ code in verbatim text blocks.  OpenFOAM requires Polymode 0.2
 ;; or newer.  To actually enable Polymode, customize the variable
 ;; ‘openfoam-verbatim-text-mode’.
+;;
+;; If you think a ‘∇-mode’ command is a good idea so you can have a
+;; fancy looking ‘mode’ variable in your OpenFOAM data files, then
+;; just paste the following code into your Emacs initialization file:
+;;
+;;      (defalias '∇-mode #'openfoam-mode)
+;;
+;; OpenFOAM is cool and you should be too!
 
 ;;; Code:
 
