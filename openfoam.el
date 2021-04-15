@@ -1203,6 +1203,8 @@ that you can run a separate shell for each case directory."
 	  (let ((path (getenv "PATH"))
 		(sep (regexp-quote path-separator)))
 	    ;; Append ‘exec-directory’ to the program search path.
+	    ;; This is an Emacs convention and comint mode expects
+	    ;; it to be there.
 	    (setq-local exec-path (nconc (split-string path sep t)
 					 (list exec-directory))))
 	  ;; Mark as initialized.
