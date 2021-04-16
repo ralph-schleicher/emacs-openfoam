@@ -1042,13 +1042,12 @@ A newline character is appended to PROJECT-DIRECTORY."
 					 ".WM_PROJECT_DIR"
 					 case-directory)))
 			 (and (file-exists-p file-name) file-name))
-		       ;; TODO: Consider using ‘if-let*’ and
-		       ;; ‘when-let*’ (see below); requires
-		       ;; Emacs 26.1.
-		       (if-let ((dir (expand-file-name ".OpenFOAM" case-directory))
-				(dirp (and dir (file-directory-p dir))))
-			   (expand-file-name "WM_PROJECT_DIR" dir)
-			 (expand-file-name ".WM_PROJECT_DIR" case-directory)))))
+		       ;; The file does not exist.  Create it in an
+		       ;; existing directory.
+		       (let ((dir (expand-file-name ".OpenFOAM" case-directory)))
+			 (if (file-directory-p dir)
+			     (expand-file-name "WM_PROJECT_DIR" dir)
+			   (expand-file-name ".WM_PROJECT_DIR" case-directory))))))
     (with-temp-buffer
       (set-visited-file-name file-name t)
       (insert project-directory ?\n)
@@ -1114,8 +1113,7 @@ that you can run a separate shell for each case directory."
 			    (expand-file-name "~/"))
 			nil t nil))))
      ;; Attempt to determine the project directory.
-     (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir))
-				 (dirp (and dir (file-directory-p dir))))
+     (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir)))
 			(file-name-as-directory dir))))
        ;; If SAVED-DIR is non-nil but does not exist, attempt to find
        ;; an alternative installation directory.  This may happen if a
