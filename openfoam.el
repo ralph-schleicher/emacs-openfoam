@@ -411,6 +411,85 @@ descriptions.")
   "Value for ‘eldoc-documentation-function’."
   (openfoam-eldoc-dimension-set))
 
+;;;; Minor Mode
+
+(easy-menu-define openfoam-menu ()
+  "The OpenFOAM menu."
+  '("OpenFOAM"
+    ["Edit Data File" openfoam-mode
+     :help "Edit current buffer as an OpenFOAM data file"]
+    ["Apply Template" openfoam-apply-data-file-template
+     :help "Apply the OpenFOAM data file template to the current buffer"]
+    ["Insert Header" openfoam-insert-data-file-header
+     :help "Insert an OpenFOAM data file header into the current buffer"]
+    ["Insert Dimension Set" openfoam-insert-dimension-set
+     :help "Insert a dimension set at point"]
+    "--"
+    ["Edit C++ Code" openfoam-c++-mode
+     :help "Edit current buffer as OpenFOAM C++ code"]
+    "--"
+    ["Run Shell..." openfoam-shell
+     :help "Run an inferior shell in an OpenFOAM case directory"]))
+
+(defun openfoam-add-to-menu-bar (map &optional sub)
+  "Add the OpenFOAM menu to the menu bar.
+First argument MAP is the keymap.  Default is the global keymap.
+Optional second argument SUB is the sub-menu.  Value is either a
+ symbol or a list of symbols.  Default is to add the menu at the
+ top-level.  The sub-menu has to exist."
+  (let* ((map (or map (current-global-map)))
+	 (key `[menu-bar ,@(if (listp sub) sub (list sub)) openfoam])
+	 (def (lookup-key map key)))
+    (when (and (not (keymapp def))
+	       (or (null sub)
+		   (let ((parent (cl-subseq key 0 (1- (length key)))))
+		     (keymapp (lookup-key map parent)))))
+      ;; When called for the first time, add the menu at the end.
+      ;; Otherwise, use the old place.
+      (funcall (if def #'define-key #'define-key-after) map key
+	       (list 'menu-item (keymap-prompt openfoam-menu) openfoam-menu)))))
+
+(defun openfoam-remove-from-menu-bar (map &optional sub)
+  "Remove the OpenFOAM menu from the menu bar.
+First argument MAP is the keymap.  Default is the global keymap.
+Optional second argument SUB is the sub-menu.  Value is either a
+ symbol or a list of symbols.  Default is to add the menu at the
+ top-level."
+  (let* ((map (or map (current-global-map)))
+	 (key `[menu-bar ,@(if (listp sub) sub (list sub)) openfoam])
+	 (def (lookup-key map key)))
+    (when (keymapp def)
+      (define-key map key 'undefined))))
+
+;; Unconditionally add the OpenFOAM menu to the tools menu
+;; of the menu bar.
+(openfoam-add-to-menu-bar nil 'tools)
+
+(defvar openfoam-minor-mode-map nil
+  "Keymap used for OpenFOAM minor mode.")
+(when (null openfoam-minor-mode-map)
+  (let ((map (make-sparse-keymap)))
+    (openfoam-add-to-menu-bar map)
+    (setq openfoam-minor-mode-map map)))
+
+;;;###autoload
+(define-minor-mode openfoam-minor-mode
+  "OpenFOAM minor mode.
+If enabled, display the OpenFOAM menu in the menu bar."
+  :keymap 'openfoam-minor-mode-map
+  :group :openfoam)
+
+;;;###autoload
+(defun openfoam-turn-on-minor-mode ()
+  "Turn on OpenFOAM minor mode if applicable for the current buffer."
+  (unless (openfoam-mode-p)
+    (openfoam-minor-mode 1)))
+
+;;;###autoload
+(define-globalized-minor-mode openfoam-global-minor-mode
+  openfoam-minor-mode openfoam-turn-on-minor-mode
+  :group :openfoam)
+
 ;;;; Major Mode
 
 (defun openfoam-mode-p ()
@@ -432,20 +511,9 @@ descriptions.")
   "Keymap used in OpenFOAM mode buffers.")
 (when (null openfoam-mode-map)
   (let ((map (make-sparse-keymap)))
+    ;; TODO: Consider using ‘set-keymap-parent’.
+    (openfoam-add-to-menu-bar map)
     (setq openfoam-mode-map map)))
-
-(easy-menu-define openfoam-mode-menu openfoam-mode-map
-  "Menu for OpenFOAM mode buffers."
-  '("OpenFOAM"
-    ["Apply Template" openfoam-apply-data-file-template
-     :help "Apply the OpenFOAM data file template to the current buffer"]
-    ["Insert Header" openfoam-insert-data-file-header
-     :help "Insert an OpenFOAM data file header into the current buffer"]
-    ["Insert Dimension Set" openfoam-insert-dimension-set
-     :help "Insert a dimension set at point"]
-    "--"
-    ["Run Shell..." openfoam-shell
-     :help "Run an inferior shell in an OpenFOAM case directory"]))
 
 (defvar openfoam-mode-syntax-table nil
   "Syntax table used in OpenFOAM mode buffers.")
@@ -525,6 +593,8 @@ descriptions.")
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
   "Major mode for OpenFOAM data files."
   :group 'openfoam
+  ;; Turn off OpenFOAM minor mode.
+  (openfoam-minor-mode 0)
   ;; C++ comment style.
   (setq-local comment-start "//"
 	      comment-start-skip "\\(?://+\\|/\\*+\\)\\s *"
