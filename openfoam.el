@@ -642,6 +642,110 @@ If enabled, display the OpenFOAM menu in the menu bar."
       (cl-equalp file-name-1 file-name-2)
     (string= file-name-1 file-name-2)))
 
+(defun openfoam-apply-file-template (template &optional mode)
+  "Apply a file template to the current buffer.
+
+First argument TEMPLATE is the template string.
+Optional second argument MODE selects the major mode.  If MODE is a
+ function, run it without arguments.  Otherwise, if MODE is non-null,
+ attempt to select an appropriate major mode via ‘set-auto-mode’.
+
+Calls ‘current-time’ and ‘buffer-file-name’ to initialize the values
+to be substituted for the template string control sequences."
+  (let* ((now (current-time))
+	 (path (buffer-file-name))
+	 pos ;position of beginning of body
+	 offs ;position of point in body
+	 (body (save-restriction
+		 (widen)
+		 (let* ((start (save-excursion
+				 (goto-char (point-min))
+				 (skip-chars-forward " \t\n")
+				 (point)))
+			(end (save-excursion
+			       (goto-char (point-max))
+			       (skip-chars-backward " \t\n" start)
+			       (point))))
+		   (setq offs (- (openfoam-clamp (point) start end) start))
+		   (buffer-substring-no-properties start end))))
+	 (templ (with-temp-buffer
+		  (buffer-disable-undo)
+		  (insert template)
+		  ;; In case the user modifies some parameters, e.g.
+		  ;; the mail address, depending on the major mode.
+		  (when (not (null mode))
+		    (if (functionp mode)
+			(funcall mode)
+		      (let ((enable-local-variables t)
+			    (local-enable-local-variables t))
+			(set-auto-mode t)))
+		    (setq mode major-mode))
+		  ;; Turn off syntax highlighting.
+		  (when (fboundp 'font-lock-mode)
+		    (font-lock-mode 0))
+		  ;; Fill in template.
+		  (let (len subst)
+		    (goto-char (point-min))
+		    (while (search-forward "%" nil t)
+		      (setq len 1) ;pattern length
+		      (setq subst (cl-case (char-after (point))
+				    (?u (or user-login-name (user-login-name)))
+				    (?n (or user-full-name (user-full-name)))
+				    (?m user-mail-address)
+				    (?h (system-name))
+				    (?d mail-host-address)
+				    (?p (or path ""))
+				    (?f (if path (file-name-nondirectory path) ""))
+				    (?b (if path (file-name-base path) ""))
+				    (?Y (format-time-string "%Y" now))
+				    (?D (format-time-string "%Y-%m-%d" now))
+				    (?T (format-time-string "%H:%M:%S" now))
+				    (?L (format-time-string "%Y%m%dT%H%M%S" now))
+				    (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
+				    (?* (setq len 2)
+					(cl-case (char-after (1+ (point)))
+					  (?Y (format-time-string "%Y" now t))
+					  (?D (format-time-string "%Y-%m-%d" now t))
+					  (?T (format-time-string "%H:%M:%S" now t))
+					  (?L (format-time-string "%Y%m%dT%H%M%S" now t))
+					  (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
+					  (t ;no match
+					   (setq len 1)
+					   nil)))
+				    (?\( (let* ((start (point))
+						(object (read (current-buffer)))
+						(end (point))
+						(value (eval object)))
+					   (goto-char start)
+					   (setq len (- end start))
+					   (when (stringp value)
+					     value)))
+				    (?| (when (null pos) ;first occurrence
+					  (setq pos (1- (point))))
+					body)
+				    (?% ?%)))
+		      (if (null subst)
+			  ;; Skip pattern, but don't move beyond
+			  ;; end of buffer.
+			  (forward-char (min len (- (point-max) (point))))
+			;; Replace pattern.
+			(delete-char -1)
+			(delete-char len)
+			(insert subst))))
+		  ;; Return filled in template.
+		  (buffer-substring-no-properties (point-min) (point-max)))))
+    ;; Replace buffer contents.
+    (erase-buffer)
+    (insert templ)
+    ;; Restore point.
+    (goto-char (if (null pos)
+		   (point-min)
+		 (+ pos offs)))
+    ;; Set major mode.
+    (when (functionp mode)
+      (funcall mode))
+    ()))
+
 (defcustom openfoam-data-file-template "\
 //  =========                 |  -*- OpenFOAM -*-
 //  \\\\      /  F ield         |
@@ -697,96 +801,14 @@ See ‘openfoam-data-file-template’ for more information."
   (interactive)
   (barf-if-buffer-read-only)
   (when openfoam-data-file-template
-    (let* ((now (current-time))
-	   (path (buffer-file-name))
-	   pos ;position of beginning of body
-	   offs ;position of point in body
-	   (body (save-restriction
-		   (widen)
-		   (let* ((start (save-excursion
-				   (goto-char (point-min))
-				   (skip-chars-forward " \t\n")
-				   (point)))
-			  (end (save-excursion
-				 (goto-char (point-max))
-				 (skip-chars-backward " \t\n" start)
-				 (point))))
-		     (setq offs (- (openfoam-clamp (point) start end) start))
-		     (buffer-substring-no-properties start end))))
-	   (templ (with-temp-buffer
-		    (buffer-disable-undo)
-		    ;; In case the user modifies some parameters, e.g.
-		    ;; the mail address, depending on the major mode.
-		    (openfoam-mode)
-		    ;; Turn off syntax highlighting.
-		    (when (fboundp 'font-lock-mode)
-		      (font-lock-mode 0))
-		    ;; Fill in template.
-		    (erase-buffer)
-		    (insert openfoam-data-file-template)
-		    (let (len subst)
-		      (goto-char (point-min))
-		      (while (search-forward "%" nil t)
-			(setq len 1) ;pattern length
-			(setq subst (cl-case (char-after (point))
-				      (?u (or user-login-name (user-login-name)))
-				      (?n (or user-full-name (user-full-name)))
-				      (?m user-mail-address)
-				      (?h (system-name))
-				      (?d mail-host-address)
-				      (?p (or path ""))
-				      (?f (if path (file-name-nondirectory path) ""))
-				      (?b (if path (file-name-base path) ""))
-				      (?Y (format-time-string "%Y" now))
-				      (?D (format-time-string "%Y-%m-%d" now))
-				      (?T (format-time-string "%H:%M:%S" now))
-				      (?L (format-time-string "%Y%m%dT%H%M%S" now))
-				      (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
-				      (?* (setq len 2)
-					  (cl-case (char-after (1+ (point)))
-					    (?Y (format-time-string "%Y" now t))
-					    (?D (format-time-string "%Y-%m-%d" now t))
-					    (?T (format-time-string "%H:%M:%S" now t))
-					    (?L (format-time-string "%Y%m%dT%H%M%S" now t))
-					    (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
-					    (t ;no match
-					     (setq len 1)
-					     nil)))
-				      (?\( (let* ((start (point))
-						  (object (read (current-buffer)))
-						  (end (point))
-						  (value (eval object)))
-					     (goto-char start)
-					     (setq len (- end start))
-					     (when (stringp value)
-					       value)))
-				      (?| (when (null pos) ;first occurrence
-					    (setq pos (1- (point))))
-					  body)
-				      (?% ?%)))
-			(if (null subst)
-			    ;; Skip pattern, but don't move beyond
-			    ;; end of buffer.
-			    (forward-char (min len (- (point-max) (point))))
-			  ;; Replace pattern.
-			  (delete-char -1)
-			  (delete-char len)
-			  (insert subst))))
-		    ;; Reindent the whole buffer.
-		    (indent-region (point-min) (point-max))
-		    ;; Return filled in template.
-		    (buffer-substring-no-properties (point-min) (point-max)))))
-      ;; Replace buffer contents.
-      (erase-buffer)
-      (insert templ)
-      ;; Restore point.
-      (goto-char (if (null pos)
-		     (point-min)
-		   (+ pos offs))))
-    ;; Turn on OpenFOAM mode.
-    (openfoam-mode)
-    ;; Provide a hook for further modifications.
-    (run-hooks 'openfoam-apply-data-file-template-hook)))
+    (openfoam-apply-file-template openfoam-data-file-template 'openfoam-mode))
+  ;; Turn on OpenFOAM mode.
+  (unless (eq major-mode 'openfoam-mode)
+    (openfoam-mode))
+  ;; Reindent the whole buffer.
+  (indent-region (point-min) (point-max))
+  ;; Provide a hook for further modifications.
+  (run-hooks 'openfoam-apply-data-file-template-hook))
 
 (defcustom openfoam-insert-data-file-header-position-hook nil
   "Leave point where to insert the OpenFOAM data file header.
