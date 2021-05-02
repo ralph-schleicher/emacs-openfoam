@@ -40,7 +40,8 @@
 (add-hook 'openfoam-apply-data-file-template-hook 'openfoam-insert-data-file-header)
 
 (with-eval-after-load 'openfoam
-  (openfoam-add-to-data-file-contents-alist "system/controlDict" "\
+  (openfoam-add-to-file-alist "system/controlDict"
+    :body "\
 application laplacianFoam;
 
 // Simulation time and time step.
@@ -62,7 +63,8 @@ timeFormat general;
 timePrecision 6;
 purgeWrite 0;
 ")
-  (openfoam-add-to-data-file-contents-alist "system/fvSchemes" "\
+  (openfoam-add-to-file-alist "system/fvSchemes"
+    :body "\
 ddtSchemes
 {
     default steadyState;
@@ -93,7 +95,8 @@ snGradSchemes
     default corrected;
 }
 ")
-  (openfoam-add-to-data-file-contents-alist "system/fvSolution" "\
+  (openfoam-add-to-file-alist "system/fvSolution"
+    :body "\
 solvers
 {
 }
