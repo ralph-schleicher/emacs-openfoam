@@ -911,27 +911,98 @@ not a hook function obeys this limit is undefined."
       (goto-char point)))
   ())
 
-(defcustom openfoam-data-file-contents-alist ()
-  "Alist of initial file contents for OpenFOAM data files.
-List elements are cons cells of the form ‘(FILE-NAME . CONTENTS)’
-where FILE-NAME is the relative file name in a case directory and
-CONTENTS is the file contents."
-  :type '(repeat (cons (string :tag "File name")
-		       (string :tag "File contents")))
+(defcustom openfoam-file-alist
+  '(;; Required files in case directories.
+    ("system/controlDict"
+     :mode openfoam-mode
+     :template openfoam-apply-data-file-template
+     :body nil)
+    ("system/fvSchemes"
+     :mode openfoam-mode
+     :template openfoam-apply-data-file-template
+     :body nil)
+    ("system/fvSolution"
+     :mode openfoam-mode
+     :template openfoam-apply-data-file-template
+     :body nil))
+  "Alist of OpenFOAM file properties.
+List elements are cons cells of the form ‘(FILE-SPEC . PROPERTIES)’
+where FILE-SPEC names a file in an application or case directory and
+PROPERTIES is a property list.  Known properties together with their
+meaning are listed in the table below.
+
+:regexp
+     Whether or not FILE-SPEC is a regular expression.  Value is
+     a generalized boolean.  Default is nil, i.e. FILE-SPEC is a
+     literal file name.
+
+:mode
+     The file's major mode.  Value is the symbol of the major mode
+     function.
+
+:template
+     The file template.  Value is a string or a variable whose value
+     is a string.  See ‘openfoam-data-file-template’ for a description
+     of the string format.  Value can also be a function for munching
+     the current buffer.
+
+:body
+     The initial file contents.  Value is a string."
+  :type '(alist
+	  :key-type (string
+		     :tag "File name")
+	  :value-type (plist
+		       :tag "Properties"
+		       :options ((:regexp
+				  (choice
+				   :tag "File name match"
+				   (const :tag "Literal file name" nil)
+				   (const :tag "Regular expression" t)))
+				 (:mode
+				  (symbol
+				   :tag "Major mode"))
+				 (:template
+				  (choice
+				   :tag "File template"
+				   (const :tag "None" nil)
+				   (string :tag "Text")
+				   variable
+				   function))
+				 (:body
+				  (choice
+				   :tag "Initial file contents"
+				   (const :tag "None" nil)
+				   (string :tag "Text")))
+				 )))
   :group 'openfoam)
 
-(defun openfoam-add-to-data-file-contents-alist (file-name contents)
-  "Add or update an element in ‘openfoam-data-file-contents-alist’.
+(defun openfoam-add-to-file-alist (file-spec &rest properties)
+  "Add or update an element in ‘openfoam-file-alist’.
+First argument FILE-SPEC is the matching file name.
+Remaining arguments PROPERTIES form a property list."
+  (declare (indent 1))
+  (let ((cell (assoc file-spec openfoam-file-alist #'string-equal)))
+    (when (null cell)
+      (setq cell (list file-spec
+		       :regexp nil
+		       :mode nil
+		       :template nil
+		       :body nil))
+      (setq openfoam-file-alist (nconc openfoam-file-alist (list cell))))
+    (let ((plist (cdr cell)))
+      (while properties
+	(let ((key (car properties))
+	      (value (cadr properties)))
+	  (setq plist (plist-put plist key value)))
+	(setq properties (cddr properties)))
+      (setcdr cell plist)))
+  openfoam-file-alist)
 
-First argument FILE-NAME is the relative file name in a case directory.
-Second argument CONTENTS is the file contents."
-  (let ((cell (assoc file-name openfoam-data-file-contents-alist #'openfoam-file-name-equal-p)))
-    (if (not (null cell))
-	(setcdr cell contents)
-      (push (cons file-name contents) openfoam-data-file-contents-alist)))
-  openfoam-data-file-contents-alist)
-
-(put 'openfoam-add-to-data-file-contents-alist 'lisp-indent-function 1)
+(defun openfoam-remove-from-file-alist (file-spec)
+  "Remove an element from ‘openfoam-file-alist’.
+Argument FILE-SPEC is the matching file name."
+  (setq openfoam-file-alist (cl-delete file-spec openfoam-file-alist
+				       :key #'car :test #'string-equal)))
 
 ;;;###autoload
 (defun openfoam-insert-dimension-set ()
@@ -971,7 +1042,7 @@ Argument DIRECTORY is the directory file name."
 		  (unless (file-exists-p file)
 		    (with-temp-buffer
 		      (set-visited-file-name file t)
-		      (when-let ((contents (cdr (assoc name openfoam-data-file-contents-alist #'openfoam-file-name-equal-p))))
+		      (when-let ((contents (plist-get (cdr (assoc name openfoam-file-alist #'openfoam-file-name-equal-p)) :body)))
 			(insert contents))
 		      (goto-char (point-min))
 		      (unless (re-search-forward "-\\*-" (save-excursion (end-of-line) (point)) t)
