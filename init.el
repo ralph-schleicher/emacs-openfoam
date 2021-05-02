@@ -2,6 +2,8 @@
 
 (require 'openfoam-autoloads)
 
+(defalias '∇-mode #'openfoam-mode)
+
 (setq openfoam-project-directory-alist
       '(;; OpenFOAM Foundation releases.
 	(8 . "/opt/OpenFOAM/OpenFOAM-8")
