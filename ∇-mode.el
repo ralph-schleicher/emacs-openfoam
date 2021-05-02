@@ -44,4 +44,6 @@
 ;;;###autoload
 (defalias '∇-mode #'openfoam-mode)
 
+(provide '∇-mode)
+
 ;;; ∇-mode.el ends here
