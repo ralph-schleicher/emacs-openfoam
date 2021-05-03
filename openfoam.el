@@ -966,8 +966,7 @@ meaning are listed in the table below.
 				   :tag "File template"
 				   (const :tag "None" nil)
 				   (string :tag "Text")
-				   variable
-				   function))
+				   symbol))
 				 (:body
 				  (choice
 				   :tag "Initial file contents"
