@@ -959,7 +959,7 @@ meaning are listed in the table below.
 				   (const :tag "Literal file name" nil)
 				   (const :tag "Regular expression" t)))
 				 (:mode
-				  (symbol
+				  (function
 				   :tag "Major mode"))
 				 (:template
 				  (choice
