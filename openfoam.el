@@ -1003,6 +1003,55 @@ Argument FILE-SPEC is the matching file name."
   (setq openfoam-file-alist (cl-delete file-spec openfoam-file-alist
 				       :key #'car :test #'string-equal)))
 
+(defun openfoam-file-properties (file-name)
+  "Return the OpenFOAM file properties associated with FILE-NAME.
+Value is a property list.  See ‘openfoam-file-alist’ for a list
+of file properties together with their meaning."
+  (catch t
+    (dolist (cell openfoam-file-alist)
+      (let ((file-spec (car cell))
+	    (plist (cdr cell)))
+	(when (if (plist-get plist :regexp)
+		  (string-match file-spec file-name)
+		(string-equal file-spec file-name))
+	  (throw t plist))))))
+
+(defun openfoam-create-file (name &optional directory)
+  "Create regular file NAME in DIRECTORY.
+Do nothing if the file already exists.  Otherwise, create a new
+file based on the file template and initial file contents defined
+in ‘openfoam-file-alist’.  The parent directory has to exist."
+  (let ((file (expand-file-name name directory)))
+    (unless (file-exists-p file)
+      (with-temp-buffer
+	(set-visited-file-name file t)
+	(let* ((plist (openfoam-file-properties name))
+	       (mode (plist-get plist :mode))
+	       (templ (plist-get plist :template))
+	       (body (plist-get plist :body)))
+	  ;; Insert file contents.
+	  (when (stringp body)
+	    (insert body)
+	    (goto-char (point-min)))
+	  ;; Apply template.
+	  (if (functionp templ)
+	      (funcall templ)
+	    (when (and (symbolp templ) (boundp templ))
+	      (setq templ (symbol-value templ)))
+	    (when (stringp templ)
+	      (openfoam-apply-file-template templ (or mode t)))))
+	(set-buffer-modified-p t)
+	(save-buffer 0)))
+    file))
+
+(defun openfoam-create-directory (name &optional directory)
+  "Create directory NAME in DIRECTORY.
+Do nothing if the directory already exists.  Otherwise, create a new
+directory including all non-existing parent directories."
+  (let ((dir (expand-file-name name directory)))
+    (mkdir dir t)
+    dir))
+
 ;;;###autoload
 (defun openfoam-insert-dimension-set ()
   "Insert a dimension set at point.
@@ -1031,34 +1080,12 @@ Leave point before the opening ‘[’."
 Argument DIRECTORY is the directory file name."
   (interactive "F")
   (let ((directory (file-name-as-directory directory)))
-    (mkdir directory t)
-    (cl-flet ((create-directory (name)
-	        (let ((dir (expand-file-name name directory)))
-		  (unless (file-directory-p dir)
-		    (mkdir dir))))
-	      (create-data-file (name)
-	        (let ((file (expand-file-name name directory)))
-		  (unless (file-exists-p file)
-		    (with-temp-buffer
-		      (set-visited-file-name file t)
-		      (when-let ((contents (plist-get (cdr (assoc name openfoam-file-alist #'openfoam-file-name-equal-p)) :body)))
-			(insert contents))
-		      (goto-char (point-min))
-		      (unless (re-search-forward "-\\*-" (save-excursion (end-of-line) (point)) t)
-			(openfoam-apply-data-file-template))
-		      (goto-char (point-min))
-		      (openfoam-skip-forward)
-		      (unless (looking-at "FoamFile\\>")
-			(openfoam-insert-data-file-header))
-		      (set-buffer-modified-p t)
-		      (save-buffer 0))))))
-      (create-directory "0")
-      (create-directory "constant")
-      (create-directory "constant/polyMesh")
-      (create-directory "system")
-      (create-data-file "system/controlDict")
-      (create-data-file "system/fvSchemes")
-      (create-data-file "system/fvSolution"))
+    (openfoam-create-directory "0" directory)
+    (openfoam-create-directory "constant/polyMesh" directory)
+    (openfoam-create-directory "system" directory)
+    (openfoam-create-file "system/controlDict" directory)
+    (openfoam-create-file "system/fvSchemes" directory)
+    (openfoam-create-file "system/fvSolution" directory)
     directory))
 
 (defcustom openfoam-project-directory-alist ()
