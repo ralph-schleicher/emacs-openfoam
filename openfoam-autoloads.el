@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24718 58250 233740
-;;;;;;  790000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24721 40529 854149
+;;;;;;  655000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-c++-mode "openfoam" "\
@@ -79,6 +79,13 @@ not a hook function obeys this limit is undefined.
 (autoload 'openfoam-insert-dimension-set "openfoam" "\
 Insert a dimension set at point.
 Leave point before the opening ‘[’." t nil)
+
+(autoload 'openfoam-create-app-directory "openfoam" "\
+Create an OpenFOAM application directory.
+
+Argument DIRECTORY is the directory file name.
+
+\(fn DIRECTORY)" t nil)
 
 (autoload 'openfoam-create-case-directory "openfoam" "\
 Create an OpenFOAM case directory.
