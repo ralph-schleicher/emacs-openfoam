@@ -636,116 +636,6 @@ If enabled, display the OpenFOAM menu in the menu bar."
 
 ;;;; Data Files
 
-(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
-  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
-  (if (memq system-type '(windows-nt ms-dos))
-      (cl-equalp file-name-1 file-name-2)
-    (string= file-name-1 file-name-2)))
-
-(defun openfoam-apply-file-template (template &optional mode)
-  "Apply a file template to the current buffer.
-
-First argument TEMPLATE is the template string.
-Optional second argument MODE selects the major mode.  If MODE is a
- function, run it without arguments.  Otherwise, if MODE is non-null,
- attempt to select an appropriate major mode via ‘set-auto-mode’.
-
-Calls ‘current-time’ and ‘buffer-file-name’ to initialize the values
-to be substituted for the template string control sequences."
-  (let* ((now (current-time))
-	 (path (buffer-file-name))
-	 pos ;position of beginning of body
-	 offs ;position of point in body
-	 (body (save-restriction
-		 (widen)
-		 (let* ((start (save-excursion
-				 (goto-char (point-min))
-				 (skip-chars-forward " \t\n")
-				 (point)))
-			(end (save-excursion
-			       (goto-char (point-max))
-			       (skip-chars-backward " \t\n" start)
-			       (point))))
-		   (setq offs (- (openfoam-clamp (point) start end) start))
-		   (buffer-substring-no-properties start end))))
-	 (templ (with-temp-buffer
-		  (buffer-disable-undo)
-		  (insert template)
-		  ;; In case the user modifies some parameters, e.g.
-		  ;; the mail address, depending on the major mode.
-		  (when (not (null mode))
-		    (if (functionp mode)
-			(funcall mode)
-		      (let ((enable-local-variables t)
-			    (local-enable-local-variables t))
-			(set-auto-mode t)))
-		    (setq mode major-mode))
-		  ;; Turn off syntax highlighting.
-		  (when (fboundp 'font-lock-mode)
-		    (font-lock-mode 0))
-		  ;; Fill in template.
-		  (let (len subst)
-		    (goto-char (point-min))
-		    (while (search-forward "%" nil t)
-		      (setq len 1) ;pattern length
-		      (setq subst (cl-case (char-after (point))
-				    (?u (or user-login-name (user-login-name)))
-				    (?n (or user-full-name (user-full-name)))
-				    (?m user-mail-address)
-				    (?h (system-name))
-				    (?d mail-host-address)
-				    (?p (or path ""))
-				    (?f (if path (file-name-nondirectory path) ""))
-				    (?b (if path (file-name-base path) ""))
-				    (?Y (format-time-string "%Y" now))
-				    (?D (format-time-string "%Y-%m-%d" now))
-				    (?T (format-time-string "%H:%M:%S" now))
-				    (?L (format-time-string "%Y%m%dT%H%M%S" now))
-				    (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
-				    (?* (setq len 2)
-					(cl-case (char-after (1+ (point)))
-					  (?Y (format-time-string "%Y" now t))
-					  (?D (format-time-string "%Y-%m-%d" now t))
-					  (?T (format-time-string "%H:%M:%S" now t))
-					  (?L (format-time-string "%Y%m%dT%H%M%S" now t))
-					  (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
-					  (t ;no match
-					   (setq len 1)
-					   nil)))
-				    (?\( (let* ((start (point))
-						(object (read (current-buffer)))
-						(end (point))
-						(value (eval object)))
-					   (goto-char start)
-					   (setq len (- end start))
-					   (when (stringp value)
-					     value)))
-				    (?| (when (null pos) ;first occurrence
-					  (setq pos (1- (point))))
-					body)
-				    (?% ?%)))
-		      (if (null subst)
-			  ;; Skip pattern, but don't move beyond
-			  ;; end of buffer.
-			  (forward-char (min len (- (point-max) (point))))
-			;; Replace pattern.
-			(delete-char -1)
-			(delete-char len)
-			(insert subst))))
-		  ;; Return filled in template.
-		  (buffer-substring-no-properties (point-min) (point-max)))))
-    ;; Replace buffer contents.
-    (erase-buffer)
-    (insert templ)
-    ;; Restore point.
-    (goto-char (if (null pos)
-		   (point-min)
-		 (+ pos offs)))
-    ;; Set major mode.
-    (when (functionp mode)
-      (funcall mode))
-    ()))
-
 (defcustom openfoam-data-file-template "\
 //  =========                 |  -*- OpenFOAM -*-
 //  \\\\      /  F ield         |
@@ -911,6 +801,22 @@ not a hook function obeys this limit is undefined."
       (goto-char point)))
   ())
 
+;;;###autoload
+(defun openfoam-insert-dimension-set ()
+  "Insert a dimension set at point.
+Leave point before the opening ‘[’."
+  (interactive)
+  (save-excursion
+    (insert "[0 0 0 0 0 0 0]")))
+
+;;;; Files and Directories
+
+(defun openfoam-file-name-equal-p (file-name-1 file-name-2)
+  "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
+  (if (memq system-type '(windows-nt ms-dos))
+      (cl-equalp file-name-1 file-name-2)
+    (string= file-name-1 file-name-2)))
+
 (defcustom openfoam-file-alist
   '(;; Required files in case directories.
     ("system/controlDict"
@@ -1016,6 +922,110 @@ of file properties together with their meaning."
 		(string-equal file-spec file-name))
 	  (throw t plist))))))
 
+(defun openfoam-apply-file-template (template &optional mode)
+  "Apply a file template to the current buffer.
+
+First argument TEMPLATE is the template string.
+Optional second argument MODE selects the major mode.  If MODE is a
+ function, run it without arguments.  Otherwise, if MODE is non-null,
+ attempt to select an appropriate major mode via ‘set-auto-mode’.
+
+Calls ‘current-time’ and ‘buffer-file-name’ to initialize the values
+to be substituted for the template string control sequences."
+  (let* ((now (current-time))
+	 (path (buffer-file-name))
+	 pos ;position of beginning of body
+	 offs ;position of point in body
+	 (body (save-restriction
+		 (widen)
+		 (let* ((start (save-excursion
+				 (goto-char (point-min))
+				 (skip-chars-forward " \t\n")
+				 (point)))
+			(end (save-excursion
+			       (goto-char (point-max))
+			       (skip-chars-backward " \t\n" start)
+			       (point))))
+		   (setq offs (- (openfoam-clamp (point) start end) start))
+		   (buffer-substring-no-properties start end))))
+	 (templ (with-temp-buffer
+		  (buffer-disable-undo)
+		  (insert template)
+		  ;; In case the user modifies some parameters, e.g.
+		  ;; the mail address, depending on the major mode.
+		  (when (not (null mode))
+		    (if (functionp mode)
+			(funcall mode)
+		      (let ((enable-local-variables t)
+			    (local-enable-local-variables t))
+			(set-auto-mode t)))
+		    (setq mode major-mode))
+		  ;; Turn off syntax highlighting.
+		  (when (fboundp 'font-lock-mode)
+		    (font-lock-mode 0))
+		  ;; Fill in template.
+		  (let (len subst)
+		    (goto-char (point-min))
+		    (while (search-forward "%" nil t)
+		      (setq len 1) ;pattern length
+		      (setq subst (cl-case (char-after (point))
+				    (?u (or user-login-name (user-login-name)))
+				    (?n (or user-full-name (user-full-name)))
+				    (?m user-mail-address)
+				    (?h (system-name))
+				    (?d mail-host-address)
+				    (?p (or path ""))
+				    (?f (if path (file-name-nondirectory path) ""))
+				    (?b (if path (file-name-base path) ""))
+				    (?Y (format-time-string "%Y" now))
+				    (?D (format-time-string "%Y-%m-%d" now))
+				    (?T (format-time-string "%H:%M:%S" now))
+				    (?L (format-time-string "%Y%m%dT%H%M%S" now))
+				    (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
+				    (?* (setq len 2)
+					(cl-case (char-after (1+ (point)))
+					  (?Y (format-time-string "%Y" now t))
+					  (?D (format-time-string "%Y-%m-%d" now t))
+					  (?T (format-time-string "%H:%M:%S" now t))
+					  (?L (format-time-string "%Y%m%dT%H%M%S" now t))
+					  (?Z (format-time-string "%Y%m%dT%H%M%SZ" now t))
+					  (t ;no match
+					   (setq len 1)
+					   nil)))
+				    (?\( (let* ((start (point))
+						(object (read (current-buffer)))
+						(end (point))
+						(value (eval object)))
+					   (goto-char start)
+					   (setq len (- end start))
+					   (when (stringp value)
+					     value)))
+				    (?| (when (null pos) ;first occurrence
+					  (setq pos (1- (point))))
+					body)
+				    (?% ?%)))
+		      (if (null subst)
+			  ;; Skip pattern, but don't move beyond
+			  ;; end of buffer.
+			  (forward-char (min len (- (point-max) (point))))
+			;; Replace pattern.
+			(delete-char -1)
+			(delete-char len)
+			(insert subst))))
+		  ;; Return filled in template.
+		  (buffer-substring-no-properties (point-min) (point-max)))))
+    ;; Replace buffer contents.
+    (erase-buffer)
+    (insert templ)
+    ;; Restore point.
+    (goto-char (if (null pos)
+		   (point-min)
+		 (+ pos offs)))
+    ;; Set major mode.
+    (when (functionp mode)
+      (funcall mode))
+    ()))
+
 (defun openfoam-create-file (name &optional directory)
   "Create regular file NAME in DIRECTORY.
 Do nothing if the file already exists.  Otherwise, create a new
@@ -1053,27 +1063,6 @@ directory including all non-existing parent directories."
     dir))
 
 ;;;###autoload
-(defun openfoam-insert-dimension-set ()
-  "Insert a dimension set at point.
-Leave point before the opening ‘[’."
-  (interactive)
-  (save-excursion
-    (insert "[0 0 0 0 0 0 0]")))
-
-;;;; Case Directories
-
-(defun openfoam-case-directory (file-name-or-directory)
-  "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
-  (let ((directory (file-name-directory file-name-or-directory)))
-    (while (and directory (not (and (file-directory-p
-				     (expand-file-name "constant" directory))
-				    (file-directory-p
-				     (expand-file-name "system" directory)))))
-      (let ((up (file-name-directory (directory-file-name directory))))
-	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
-    directory))
-
-;;;###autoload
 (defun openfoam-create-case-directory (directory)
   "Create an OpenFOAM case directory.
 
@@ -1087,6 +1076,19 @@ Argument DIRECTORY is the directory file name."
     (openfoam-create-file "system/fvSchemes" directory)
     (openfoam-create-file "system/fvSolution" directory)
     directory))
+
+(defun openfoam-case-directory (file-name-or-directory)
+  "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
+  (let ((directory (file-name-directory file-name-or-directory)))
+    (while (and directory (not (and (file-directory-p
+				     (expand-file-name "constant" directory))
+				    (file-directory-p
+				     (expand-file-name "system" directory)))))
+      (let ((up (file-name-directory (directory-file-name directory))))
+	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
+    directory))
+
+;;;; Interactive Shell
 
 (defcustom openfoam-project-directory-alist ()
   "Alist of OpenFOAM project directories.
