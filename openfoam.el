@@ -818,7 +818,27 @@ Leave point before the opening ‘[’."
     (string= file-name-1 file-name-2)))
 
 (defcustom openfoam-file-alist
-  '(;; Required files in case directories.
+  '(;; Required files in application directories.
+    ("Make/files"
+     :mode makefile-mode
+     :template nil
+     :body nil)
+    ("Make/options"
+     :mode makefile-mode
+     :template nil
+     :body nil)
+    ;; C++ source code.
+    ("\\.C\\'"
+     :regexp t
+     :mode openfoam-c++-mode
+     :template nil
+     :body nil)
+    ("\\.H\\'"
+     :regexp t
+     :mode openfoam-c++-mode
+     :template nil
+     :body nil)
+    ;; Required files in case directories.
     ("system/controlDict"
      :mode openfoam-mode
      :template openfoam-apply-data-file-template
@@ -1061,6 +1081,29 @@ directory including all non-existing parent directories."
   (let ((dir (expand-file-name name directory)))
     (mkdir dir t)
     dir))
+
+;;;###autoload
+(defun openfoam-create-app-directory (directory)
+  "Create an OpenFOAM application directory.
+
+Argument DIRECTORY is the directory file name."
+  (interactive "F")
+  (let ((directory (file-name-as-directory directory)))
+    (openfoam-create-directory "Make" directory)
+    (openfoam-create-file "Make/files" directory)
+    (openfoam-create-file "Make/options" directory)
+    directory))
+
+(defun openfoam-app-directory (file-name-or-directory)
+  "Return the OpenFOAM application directory of FILE-NAME-OR-DIRECTORY, or nil."
+  (let ((directory (file-name-directory file-name-or-directory)))
+    (while (and directory (not (and (file-regular-p
+				     (expand-file-name "Make/files" directory))
+				    (file-regular-p
+				     (expand-file-name "Make/options" directory)))))
+      (let ((up (file-name-directory (directory-file-name directory))))
+	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
+    directory))
 
 ;;;###autoload
 (defun openfoam-create-case-directory (directory)
