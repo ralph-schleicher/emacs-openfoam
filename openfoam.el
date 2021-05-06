@@ -1094,17 +1094,6 @@ Argument DIRECTORY is the directory file name."
     (openfoam-create-file "Make/options" directory)
     directory))
 
-(defun openfoam-app-directory (file-name-or-directory)
-  "Return the OpenFOAM application directory of FILE-NAME-OR-DIRECTORY, or nil."
-  (let ((directory (file-name-directory file-name-or-directory)))
-    (while (and directory (not (and (file-regular-p
-				     (expand-file-name "Make/files" directory))
-				    (file-regular-p
-				     (expand-file-name "Make/options" directory)))))
-      (let ((up (file-name-directory (directory-file-name directory))))
-	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
-    directory))
-
 ;;;###autoload
 (defun openfoam-create-case-directory (directory)
   "Create an OpenFOAM case directory.
@@ -1120,16 +1109,63 @@ Argument DIRECTORY is the directory file name."
     (openfoam-create-file "system/fvSolution" directory)
     directory))
 
+(defmacro openfoam--directory-finder (file-name-or-directory test)
+  "Return the directory above FILE-NAME-OR-DIRECTORY matching TEST, or nil.
+Syntactic sugar for ‘openfoam-case-directory’ and friends."
+  (declare (indent 1))
+  (let ((dir (gensym "dir"))
+	(up (gensym "up")))
+    (cl-labels ((tr (expr)
+		  "Transform TEST expression."
+	          (cl-etypecase expr
+		    (string
+		     (if (string-match "/\\'" expr)
+			 `(file-directory-p
+			   (expand-file-name ,(string-trim-right expr "/") ,dir))
+		       `(file-regular-p
+			 (expand-file-name ,expr ,dir))))
+		    (cons
+		     (let ((op (cl-first expr)))
+		       (cl-ecase op
+			 ((or and)
+			  (cons op (mapcar #'tr (cl-rest expr))))
+			 (not
+			  (cl-assert (= (length expr) 2))
+			  (list op (tr (cl-second expr))))))))))
+      `(let ((,dir (file-name-directory ,file-name-or-directory)))
+	 (while (and ,dir (not ,(tr test)))
+	   (let ((,up (file-name-directory (directory-file-name ,dir))))
+	     (setq ,dir (if (openfoam-file-name-equal-p ,up ,dir) nil ,up))))
+	 ,dir))))
+
 (defun openfoam-case-directory (file-name-or-directory)
   "Return the OpenFOAM case directory of FILE-NAME-OR-DIRECTORY, or nil."
-  (let ((directory (file-name-directory file-name-or-directory)))
-    (while (and directory (not (and (file-directory-p
-				     (expand-file-name "constant" directory))
-				    (file-directory-p
-				     (expand-file-name "system" directory)))))
-      (let ((up (file-name-directory (directory-file-name directory))))
-	(setq directory (if (openfoam-file-name-equal-p up directory) nil up))))
-    directory))
+  (openfoam--directory-finder file-name-or-directory
+    (or "system/controlDict"
+	"system/fvSchemes"
+	"system/fvSolution"
+	(and "constant/"
+	     "system/"))))
+
+(defun openfoam-app-directory (file-name-or-directory)
+  "Return the OpenFOAM application directory of FILE-NAME-OR-DIRECTORY, or nil."
+  (openfoam--directory-finder file-name-or-directory
+    (and "Make/files"
+	 "Make/options")))
+
+(defun openfoam-working-directory (file-name-or-directory)
+  "Return the OpenFOAM working directory of FILE-NAME-OR-DIRECTORY, or nil."
+  (openfoam--directory-finder file-name-or-directory
+    (or "system/controlDict"
+	"system/fvSchemes"
+	"system/fvSolution"
+	(and "constant/"
+	     "system/")
+	(and "Make/files"
+	     "Make/options")
+	;; See ‘openfoam-shell’.
+	".OpenFOAM/WM_PROJECT_DIR"
+	".WM_PROJECT_DIR")))
 
 ;;;; Interactive Shell
 
