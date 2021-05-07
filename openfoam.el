@@ -1268,23 +1268,23 @@ Value is nil if no project directory can be found."
 (defcustom openfoam-shell-save-project-directory 'ask
   "Whether or not to save the OpenFOAM project directory.
 If non-nil, the ‘openfoam-shell’ command will save the selected OpenFOAM
-project directory for a case directory in the file ‘.WM_PROJECT_DIR’ or
-‘.OpenFOAM/WM_PROJECT_DIR’ for future use.  Special value ‘ask’ means
+project directory for a working directory in the file ‘.WM_PROJECT_DIR’
+or ‘.OpenFOAM/WM_PROJECT_DIR’ for future use.  Special value ‘ask’ means
 to ask the user before saving the project directory."
   :type '(choice (const :tag "Always" t)
 		 (const :tag "Never" nil)
 		 (const :tag "Ask" ask))
   :group 'openfoam)
 
-(defun openfoam-shell-read-wm-project-dir (case-directory)
-  "Read the OpenFOAM project directory for CASE-DIRECTORY."
+(defun openfoam-shell-read-wm-project-dir (working-directory)
+  "Read the OpenFOAM project directory for WORKING-DIRECTORY."
   (when-let ((file-name (or (let ((file-name (expand-file-name
 					      ".OpenFOAM/WM_PROJECT_DIR"
-					      case-directory)))
+					      working-directory)))
 			      (and (file-exists-p file-name) file-name))
 			    (let ((file-name (expand-file-name
 					      ".WM_PROJECT_DIR"
-					      case-directory)))
+					      working-directory)))
 			      (and (file-exists-p file-name) file-name)))))
     (with-temp-buffer
       (insert-file-contents file-name)
@@ -1301,23 +1301,23 @@ to ask the user before saving the project directory."
 	(when (< start end)
 	  (buffer-substring-no-properties start end))))))
 
-(defun openfoam-shell-write-wm-project-dir (case-directory project-directory)
-  "Save the OpenFOAM project directory for CASE-DIRECTORY.
+(defun openfoam-shell-write-wm-project-dir (working-directory project-directory)
+  "Save the OpenFOAM project directory for WORKING-DIRECTORY.
 A newline character is appended to PROJECT-DIRECTORY."
   (let ((file-name (or (let ((file-name (expand-file-name
 					 ".OpenFOAM/WM_PROJECT_DIR"
-					 case-directory)))
+					 working-directory)))
 			 (and (file-exists-p file-name) file-name))
 		       (let ((file-name (expand-file-name
 					 ".WM_PROJECT_DIR"
-					 case-directory)))
+					 working-directory)))
 			 (and (file-exists-p file-name) file-name))
 		       ;; The file does not exist.  Create it in an
 		       ;; existing directory.
-		       (let ((dir (expand-file-name ".OpenFOAM" case-directory)))
+		       (let ((dir (expand-file-name ".OpenFOAM" working-directory)))
 			 (if (file-directory-p dir)
 			     (expand-file-name "WM_PROJECT_DIR" dir)
-			   (expand-file-name ".WM_PROJECT_DIR" case-directory))))))
+			   (expand-file-name ".WM_PROJECT_DIR" working-directory))))))
     (with-temp-buffer
       (set-visited-file-name file-name t)
       (insert project-directory ?\n)
@@ -1350,45 +1350,45 @@ A newline character is appended to PROJECT-DIRECTORY."
   "Local variable for the OpenFOAM shell.")
 
 ;;;###autoload
-(defun openfoam-shell (case-directory project-directory)
-  "Run a shell in CASE-DIRECTORY and initialize it for PROJECT-DIRECTORY.
-With prefix argument, always ask the user to confirm the case directory
+(defun openfoam-shell (working-directory project-directory)
+  "Run a shell in WORKING-DIRECTORY and initialize it for PROJECT-DIRECTORY.
+With prefix argument, always ask the user to confirm the working directory
 and project directory.
 
 If the user option ‘openfoam-shell-save-project-directory’ is non-nil,
-save the selected project directory inside the case directory so that
+save the selected project directory inside the working directory so that
 future invocations of ‘openfoam-shell’ can pick up the same project
 directory again.
 
 The inferior shell is invoked via the ‘shell’ command with the initial
-working directory set to CASE-DIRECTORY.  After normal shell startup,
+working directory set to WORKING-DIRECTORY.  After normal shell startup,
 the OpenFOAM specific startup script ‘PROJECT-DIRECTORY/etc/bashrc’ or
 ‘PROJECT-DIRECTORY/etc/cshrc’ is read automatically.
 
-The shell buffer has a name of the form ‘*PROJECT CASE-DIRECTORY*’ so
-that you can run a separate shell for each case directory."
+The shell buffer has a name of the form ‘*PROJECT WORKING-DIRECTORY*’ so
+that you can run a separate shell for each working directory."
   (interactive
-   (let (case-dir project-dir)
-     ;; Attempt to determine the case directory.
-     (setq case-dir (when-let ((file-name-or-directory
+   (let (work-dir project-dir)
+     ;; Attempt to determine the working directory.
+     (setq work-dir (when-let ((file-name-or-directory
 				(or buffer-file-name
 				    default-directory)))
-		      (openfoam-case-directory file-name-or-directory)))
-     (when (or (null case-dir) current-prefix-arg)
-       (setq case-dir (file-name-as-directory
+		      (openfoam-working-directory file-name-or-directory)))
+     (when (or (null work-dir) current-prefix-arg)
+       (setq work-dir (file-name-as-directory
 		       (read-directory-name
-			"OpenFOAM case directory: "
-			(or case-dir
+			"OpenFOAM working directory: "
+			(or work-dir
 			    default-directory
 			    (expand-file-name "~/"))
 			nil t nil))))
      ;; Attempt to determine the project directory.
-     (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir case-dir)))
+     (let ((saved-dir (when-let ((dir (openfoam-shell-read-wm-project-dir work-dir)))
 			(file-name-as-directory dir))))
        ;; If SAVED-DIR is non-nil but does not exist, attempt to find
        ;; an alternative installation directory.  This may happen if a
-       ;; project directory is moved or renamed or a case directory is
-       ;; imported from another machine.
+       ;; project directory is moved or renamed or a working directory
+       ;; is imported from another machine.
        (when (and saved-dir (not (file-directory-p saved-dir)))
 	 (when-let ((other (openfoam-other-project-directory saved-dir t)))
 	   ;; Replace SAVED-DIR.  TODO: Consider informing the user
@@ -1398,7 +1398,7 @@ that you can run a separate shell for each case directory."
 	   (progn
 	     (setq project-dir (file-name-as-directory
 				(read-directory-name
-				 (format "OpenFOAM project directory for case directory ‘%s’: " case-dir)
+				 (format "OpenFOAM project directory for working directory ‘%s’: " work-dir)
 				 (or saved-dir
 				     (openfoam-default-project-directory t)
 				     (expand-file-name "~/"))
@@ -1409,12 +1409,12 @@ that you can run a separate shell for each case directory."
 			(if (eq openfoam-shell-save-project-directory 'ask)
 			    (y-or-n-p "Save OpenFOAM project directory? ")
 			  openfoam-shell-save-project-directory))
-	       (openfoam-shell-write-wm-project-dir case-dir (directory-file-name project-dir))))
+	       (openfoam-shell-write-wm-project-dir work-dir (directory-file-name project-dir))))
 	 (setq project-dir saved-dir)))
-     (list case-dir project-dir)))
+     (list work-dir project-dir)))
   ;; Function body.
   (let* ((working-directory (file-name-as-directory
-			     (or case-directory
+			     (or working-directory
 				 default-directory
 				 (expand-file-name "~"))))
 	 (buffer-name (concat "*" (file-name-nondirectory
