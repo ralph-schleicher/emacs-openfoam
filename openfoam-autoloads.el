@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "openfoam" "openfoam.el" (24721 40529 854149
-;;;;;;  655000))
+;;;### (autoloads nil "openfoam" "openfoam.el" (24726 57475 129454
+;;;;;;  735000))
 ;;; Generated autoloads from openfoam.el
 
 (autoload 'openfoam-c++-mode "openfoam" "\
@@ -95,24 +95,33 @@ Argument DIRECTORY is the directory file name.
 \(fn DIRECTORY)" t nil)
 
 (autoload 'openfoam-shell "openfoam" "\
-Run a shell in CASE-DIRECTORY and initialize it for PROJECT-DIRECTORY.
-With prefix argument, always ask the user to confirm the case directory
+Run a shell in WORKING-DIRECTORY and initialize it for PROJECT-DIRECTORY.
+With prefix argument, always ask the user to confirm the working directory
 and project directory.
 
 If the user option ‘openfoam-shell-save-project-directory’ is non-nil,
-save the selected project directory inside the case directory so that
+save the selected project directory inside the working directory so that
 future invocations of ‘openfoam-shell’ can pick up the same project
 directory again.
 
 The inferior shell is invoked via the ‘shell’ command with the initial
-working directory set to CASE-DIRECTORY.  After normal shell startup,
+working directory set to WORKING-DIRECTORY.  After normal shell startup,
 the OpenFOAM specific startup script ‘PROJECT-DIRECTORY/etc/bashrc’ or
 ‘PROJECT-DIRECTORY/etc/cshrc’ is read automatically.
 
-The shell buffer has a name of the form ‘*PROJECT CASE-DIRECTORY*’ so
-that you can run a separate shell for each case directory.
+The shell buffer has a name of the form ‘*PROJECT WORKING-DIRECTORY*’ so
+that you can run a separate shell for each working directory.
 
-\(fn CASE-DIRECTORY PROJECT-DIRECTORY)" t nil)
+The local keymap in OpenFOAM shell buffers is ‘openfoam-shell-map’ which
+uses ‘shell-map’ as its parent keymap.  The key bindings are listed below.
+
+Finally, run ‘openfoam-shell-hook’.  If you build OpenFOAM applications
+or libraries, e.g. by running ‘wmake’, a good candidate for this hook is
+the ‘compilation-shell-minor-mode’ command.
+
+\\{openfoam-shell-map}
+
+\(fn WORKING-DIRECTORY PROJECT-DIRECTORY)" t nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "openfoam" '("openfoam-")))
 
