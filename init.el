@@ -100,6 +100,20 @@ snGradSchemes
 solvers
 {
 }
+")
+  (openfoam-add-to-file-alist "Make/files"
+    :body "\
+myFoam.C
+
+EXE = $(FOAM_USER_APPBIN)/myFoam
+")
+  (openfoam-add-to-file-alist "Make/options"
+    :body "\
+EXE_INC = \\
+    -I$(LIB_SRC)/finiteVolume/lnInclude
+
+EXE_LIBS = \\
+    -lfiniteVolume
 "))
 
 (add-hook 'openfoam-mode-hook 'rs:openfoam-setup)
