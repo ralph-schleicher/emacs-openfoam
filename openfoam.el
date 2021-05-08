@@ -417,19 +417,28 @@ descriptions.")
   "The OpenFOAM menu."
   '("OpenFOAM"
     ["Edit Data File" openfoam-mode
-     :help "Edit current buffer as an OpenFOAM data file"]
+     :help "Edit current buffer as an OpenFOAM data file"
+     :active (not openfoam-shell)]
     ["Apply Template" openfoam-apply-data-file-template
-     :help "Apply the OpenFOAM data file template to the current buffer"]
+     :help "Apply the OpenFOAM data file template to the current buffer"
+     :active (not openfoam-shell)]
     ["Insert Header" openfoam-insert-data-file-header
-     :help "Insert an OpenFOAM data file header into the current buffer"]
+     :help "Insert an OpenFOAM data file header into the current buffer"
+     :active (not openfoam-shell)]
     ["Insert Dimension Set" openfoam-insert-dimension-set
      :help "Insert a dimension set at point"]
     "--"
     ["Edit C++ Code" openfoam-c++-mode
-     :help "Edit current buffer as OpenFOAM C++ code"]
+     :help "Edit current buffer as OpenFOAM C++ code"
+     :active (not openfoam-shell)]
     "--"
     ["Run Shell..." openfoam-shell
-     :help "Run an inferior shell in an OpenFOAM case directory"]))
+     :help "Run an inferior shell in an OpenFOAM working directory"]
+    ["Compilation Mode" compilation-shell-minor-mode
+     :help "Toggle compilation shell minor mode"
+     :style toggle
+     :selected compilation-shell-minor-mode
+     :visible openfoam-shell]))
 
 (defun openfoam-add-to-menu-bar (map &optional sub)
   "Add the OpenFOAM menu to the menu bar.
@@ -1349,6 +1358,33 @@ A newline character is appended to PROJECT-DIRECTORY."
 (defvar-local openfoam-shell ()
   "Local variable for the OpenFOAM shell.")
 
+(defcustom openfoam-shell-hook nil
+  "Hook called by ‘openfoam-shell’."
+  :type 'hook
+  :group 'openfoam)
+
+(defvar openfoam-shell-map nil
+  "Keymap used in OpenFOAM shell buffers.")
+(when (null openfoam-shell-map)
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map shell-mode-map)
+    (define-key map (kbd "C-c ~") 'openfoam-shell-insert-working-directory)
+    (define-key map (kbd "C-c /") 'openfoam-shell-insert-project-directory)
+    (openfoam-add-to-menu-bar map)
+    (setq openfoam-shell-map map)))
+
+(defun openfoam-shell-insert-working-directory ()
+  "Insert the OpenFOAM shell working directory at point."
+  (interactive)
+  (when-let ((working-directory (plist-get openfoam-shell 'working-directory)))
+    (insert working-directory)))
+
+(defun openfoam-shell-insert-project-directory ()
+  "Insert the OpenFOAM shell project directory at point."
+  (interactive)
+  (when-let ((project-directory (plist-get openfoam-shell 'project-directory)))
+    (insert project-directory)))
+
 ;;;###autoload
 (defun openfoam-shell (working-directory project-directory)
   "Run a shell in WORKING-DIRECTORY and initialize it for PROJECT-DIRECTORY.
@@ -1366,7 +1402,16 @@ the OpenFOAM specific startup script ‘PROJECT-DIRECTORY/etc/bashrc’ or
 ‘PROJECT-DIRECTORY/etc/cshrc’ is read automatically.
 
 The shell buffer has a name of the form ‘*PROJECT WORKING-DIRECTORY*’ so
-that you can run a separate shell for each working directory."
+that you can run a separate shell for each working directory.
+
+The local keymap in OpenFOAM shell buffers is ‘openfoam-shell-map’ which
+uses ‘shell-map’ as its parent keymap.  The key bindings are listed below.
+
+Finally, run ‘openfoam-shell-hook’.  If you build OpenFOAM applications
+or libraries, e.g. by running ‘wmake’, a good candidate for this hook is
+the ‘compilation-shell-minor-mode’ command.
+
+\\{openfoam-shell-map}"
   (interactive
    (let (work-dir project-dir)
      ;; Attempt to determine the working directory.
@@ -1476,7 +1521,14 @@ that you can run a separate shell for each working directory."
 	    (setq-local exec-path (nconc (split-string path sep t)
 					 (list exec-directory))))
 	  ;; Mark as initialized.
-	  (setq openfoam-shell nil)
+	  (setq openfoam-shell `(working-directory ,working-directory
+				 project-directory ,project-directory))
+	  ;; Turn off OpenFOAM minor mode.
+	  (openfoam-minor-mode 0)
+	  ;; Hack local keymap.
+	  (use-local-map openfoam-shell-map)
+	  ;; Provide a hook for the user.
+	  (run-hooks 'openfoam-shell-hook)
 	  ())))))
 
 (provide 'openfoam)
