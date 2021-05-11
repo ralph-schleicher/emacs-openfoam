@@ -37,7 +37,7 @@
 ;;
 ;; This package provides major modes for editing OpenFOAM data files
 ;; and C++ code.  There are also user commands for managing OpenFOAM
-;; case directories.
+;; case and application directories.
 ;;
 ;; By default, verbatim text blocks in OpenFOAM data files are
 ;; indented like data which yields acceptable results for C++ code.
@@ -600,7 +600,26 @@ If enabled, display the OpenFOAM menu in the menu bar."
 
 ;;;###autoload
 (define-derived-mode openfoam-mode prog-mode "OpenFOAM"
-  "Major mode for OpenFOAM data files."
+  "Major mode for OpenFOAM data files.
+
+OpenFOAM data files don't have a file extension.  Thus, it is best to
+add a ‘mode’ variable to every OpenFOAM data file.  You can do so by
+customizing the variable ‘openfoam-data-file-template’ and then call
+the ‘openfoam-apply-data-file-template’ command when you start editing
+an OpenFOAM data file.  The ‘openfoam-insert-data-file-header’ command
+can be useful here, too.
+
+Code streams in OpenFOAM data files contain C++ code.  The user option
+‘openfoam-verbatim-text-mode’ determines how to indent and fontify the
+contents of verbatim text blocks.  There is a dedicated major mode for
+editing OpenFOAM C++ source code files.  See ‘openfoam-c++-mode’ for
+more details.
+
+These commands are also available via the OpenFOAM menu.  The OpenFOAM
+menu is always accessible via the tools menu-bar menu and directly from
+the menu-bar in OpenFOAM buffers.  You can enable the OpenFOAM menu-bar
+menu in any other buffer via the ‘openfoam-minor-mode’ command or for
+all buffers via the ‘openfoam-global-minor-mode’ command."
   :group 'openfoam
   ;; Turn off OpenFOAM minor mode.
   (openfoam-minor-mode 0)
@@ -882,7 +901,11 @@ meaning are listed in the table below.
      the current buffer.
 
 :body
-     The initial file contents.  Value is a string."
+     The initial file contents.  Value is a string.
+
+The ‘openfoam-add-to-file-alist’ and ‘openfoam-remove-from-file-alist’
+functions provide a simple interface to add, modify, or remove entries
+from Lisp."
   :type '(alist
 	  :key-type (string
 		     :tag "File name")
@@ -1095,7 +1118,11 @@ directory including all non-existing parent directories."
 (defun openfoam-create-app-directory (directory)
   "Create an OpenFOAM application directory.
 
-Argument DIRECTORY is the directory file name."
+Argument DIRECTORY is the directory file name.
+
+This command creates the ‘Make’ directory and the required files
+‘Make/files’ and ‘Make/options’.  See ‘openfoam-file-alist’ for how
+to customize the initial file contents of these files."
   (interactive "F")
   (let ((directory (file-name-as-directory directory)))
     (openfoam-create-directory "Make" directory)
@@ -1107,7 +1134,12 @@ Argument DIRECTORY is the directory file name."
 (defun openfoam-create-case-directory (directory)
   "Create an OpenFOAM case directory.
 
-Argument DIRECTORY is the directory file name."
+Argument DIRECTORY is the directory file name.
+
+This command creates the initial time directory ‘0’, the ‘constant’
+and ‘system’ directories, and the required files ‘system/controlDict’,
+‘system/fvSchemes’, and ‘system/fvSolution’.  See ‘openfoam-file-alist’
+for how to customize the initial file contents of these files."
   (interactive "F")
   (let ((directory (file-name-as-directory directory)))
     (openfoam-create-directory "0" directory)
