@@ -491,7 +491,7 @@ If enabled, display the OpenFOAM menu in the menu bar."
 ;;;###autoload
 (defun openfoam-turn-on-minor-mode ()
   "Turn on OpenFOAM minor mode if applicable for the current buffer."
-  (unless (openfoam-mode-p)
+  (unless (or (openfoam-mode-p) openfoam-shell)
     (openfoam-minor-mode 1)))
 
 ;;;###autoload
