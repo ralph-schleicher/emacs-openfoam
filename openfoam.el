@@ -197,36 +197,38 @@ Arguments METHOD and ARG are documented there, too."
 
 ;;;; C++ Code
 
-(c-add-style "OpenFOAM"
-	     `((c-basic-offset . 4)
-	       (c-tab-always-indent . t)
-	       (c-comment-only-line-offset . (0 . 0))
-	       (c-indent-comments-syntactically-p . t)
-	       (c-block-comments-indent-p nil)
-	       (c-cleanup-list . (defun-close-semi list-close-comma scope-operator))
-	       (c-backslash-column . 78)
-	       ;; See ‘(c-set-stylevar-fallback 'c-offsets-alist ...)’
-	       ;; in file ‘cc-vars.el’.
-	       (c-offsets-alist
-		(c . +)
-		(topmost-intro . 0)
-		(topmost-intro-cont . 0)
-		(member-init-intro . +)
-		(member-init-cont . 0)
-		(inher-intro . 0)
-		(inher-cont . +)
-		(substatement . +)
-		(substatement-open . 0)
-		(case-label . +)
-		(label . -)
-		(comment-intro . 0)
-		(arglist-intro . +)
-		(arglist-cont . 0)
-		(arglist-cont-nonempty . 0)
-		(arglist-close . 0)
-		(stream-op . 0)
-		(cpp-macro . c-lineup-cpp-define)
-		)))
+(let ((key (downcase "OpenFOAM")))
+  (unless (assoc key c-style-alist)
+    (c-add-style key
+		 `((c-basic-offset . 4)
+		   (c-tab-always-indent . t)
+		   (c-comment-only-line-offset . (0 . 0))
+		   (c-indent-comments-syntactically-p . t)
+		   (c-block-comments-indent-p nil)
+		   (c-cleanup-list . (defun-close-semi list-close-comma scope-operator))
+		   (c-backslash-column . 78)
+		   ;; See ‘(c-set-stylevar-fallback 'c-offsets-alist ...)’
+		   ;; in file ‘cc-vars.el’.
+		   (c-offsets-alist
+		    (c . +)
+		    (topmost-intro . 0)
+		    (topmost-intro-cont . 0)
+		    (member-init-intro . +)
+		    (member-init-cont . 0)
+		    (inher-intro . 0)
+		    (inher-cont . +)
+		    (substatement . +)
+		    (substatement-open . 0)
+		    (case-label . +)
+		    (label . -)
+		    (comment-intro . 0)
+		    (arglist-intro . +)
+		    (arglist-cont . 0)
+		    (arglist-cont-nonempty . 0)
+		    (arglist-close . 0)
+		    (stream-op . 0)
+		    (cpp-macro . c-lineup-cpp-define)
+		    )))))
 
 (defcustom openfoam-c++-style "OpenFOAM"
   "Default indentation style for OpenFOAM C++ code.
