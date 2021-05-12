@@ -132,20 +132,20 @@ The code assumes that point is not inside a string or comment."
 ;; text is mainly used for C++ code and SMIE does a quite good job
 ;; here, too.  Thus, indenting verbatim text like dictionary entries
 ;; makes sense -- and it is the simplest solution.
-(defconst openfoam-smie-end ";"
+(defconst openfoam--smie-end ";"
   "End statement token.")
 
-(defconst openfoam-smie-grammar
+(defconst openfoam--smie-grammar
   (smie-prec2->grammar
    (smie-bnf->prec2
     ;; These rules are required to recognize ‘#{’ and ‘#}’ as opening
     ;; token and closing token respectively.
-    `((entries (entries ,openfoam-smie-end entries)
+    `((entries (entries ,openfoam--smie-end entries)
 	       ("#{" entries "#}")))
-    `((assoc ,openfoam-smie-end))))
+    `((assoc ,openfoam--smie-end))))
   "Grammar table for SMIE.")
 
-(defun openfoam-smie-rules (method arg)
+(defun openfoam--smie-rules (method arg)
   "Indentation rules for SMIE; see ‘smie-rules-function’.
 Arguments METHOD and ARG are documented there, too."
   (pcase (cons method arg)
@@ -153,24 +153,24 @@ Arguments METHOD and ARG are documented there, too."
      openfoam-basic-offset)
     ('(:elem . arg)
      0)
-    (`(:list-intro . ,(or openfoam-smie-end ""))
+    (`(:list-intro . ,(or openfoam--smie-end ""))
      t)
     (`(:after . ,(or "(" "["))
      (cons 'column (1+ (current-column))))
     ))
 
-(defun openfoam-smie-forward-token ()
+(defun openfoam--smie-forward-token ()
   "Move forward across the next token."
   (let ((start (point)))
     (openfoam-skip-forward)
     (cond ((eql (char-after) ?\;)
 	   (forward-char 1)
-	   openfoam-smie-end)
+	   openfoam--smie-end)
 	  ((and (> (point) start)
 		(save-excursion
 		  (goto-char start)
 		  (openfoam-after-block-p)))
-	   openfoam-smie-end)
+	   openfoam--smie-end)
 	  ((looking-at "#[{}]")
 	   (goto-char (match-end 0))
 	   (buffer-substring-no-properties
@@ -178,16 +178,16 @@ Arguments METHOD and ARG are documented there, too."
 	  (t
 	   (smie-default-forward-token)))))
 
-(defun openfoam-smie-backward-token ()
+(defun openfoam--smie-backward-token ()
   "Move backward across the previous token."
   (let ((start (point)))
     (openfoam-skip-backward)
     (cond ((eql (char-before) ?\;)
 	   (forward-char -1)
-	   openfoam-smie-end)
+	   openfoam--smie-end)
 	  ((and (< (point) start)
 		(openfoam-after-block-p))
-	   openfoam-smie-end)
+	   openfoam--smie-end)
 	  ((looking-back "#[{}]" (- (point) 2))
 	   (goto-char (match-beginning 0))
 	   (buffer-substring-no-properties
@@ -258,19 +258,19 @@ as data."
 		(const :tag "Polymode" polymode))
   :group 'openfoam)
 
-(defvar openfoam-poly-c++-innermode)
+(defvar openfoam--poly-c++-innermode)
 (defvar openfoam-c++-minor-mode)
 (declare-function openfoam-c++-minor-mode "openfoam" (arg))
 
 ;; https://polymode.github.io/
-(defun openfoam-poly-setup ()
+(defun openfoam--poly-setup ()
   "Attempt to setup Polymode."
   (unless (featurep 'polymode)
     (when (package-installed-p 'polymode)
       (require' polymode)))
   (when (featurep 'polymode)
-    (unless (boundp 'openfoam-poly-c++-innermode)
-      (define-innermode openfoam-poly-c++-innermode
+    (unless (boundp 'openfoam--poly-c++-innermode)
+      (define-innermode openfoam--poly-c++-innermode
 	:mode 'openfoam-c++-mode
 	:allow-nested nil
 	:head-matcher "#{"
@@ -285,7 +285,7 @@ as data."
       (define-polymode openfoam-c++-minor-mode nil
 	"Minor mode for editing C++ code in OpenFOAM data file buffers."
 	:hostmode nil
-	:innermodes '(openfoam-poly-c++-innermode)
+	:innermodes '(openfoam--poly-c++-innermode)
 	:keymap (make-sparse-keymap)
 	:lighter ""))
     'polymode))
@@ -632,7 +632,7 @@ all buffers via the ‘openfoam-global-minor-mode’ command."
   (setq-local openfoam-verbatim-text-mode
 	      (cl-case (default-value 'openfoam-verbatim-text-mode)
 		(polymode
-		 (openfoam-poly-setup))
+		 (openfoam--poly-setup))
 		(string
 		 'string)))
   (when (eq openfoam-verbatim-text-mode 'string)
@@ -648,9 +648,9 @@ all buffers via the ‘openfoam-global-minor-mode’ command."
   (setq font-lock-defaults '(openfoam-font-lock-keywords))
   ;; Indentation.
   (setq indent-tabs-mode nil)
-  (smie-setup openfoam-smie-grammar #'openfoam-smie-rules
-	      :forward-token #'openfoam-smie-forward-token
-	      :backward-token #'openfoam-smie-backward-token)
+  (smie-setup openfoam--smie-grammar #'openfoam--smie-rules
+	      :forward-token #'openfoam--smie-forward-token
+	      :backward-token #'openfoam--smie-backward-token)
   ;; Documentation.
   (setq-local eldoc-documentation-function #'openfoam-eldoc-documentation-function
 	      ;; Save space in the mode line.  Also avoid confusing
