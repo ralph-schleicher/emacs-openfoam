@@ -841,11 +841,15 @@ Leave point before the opening ‘[’."
 
 ;;;; Files and Directories
 
+(defsubst openfoam-file-name-case-insensitive-p ()
+  "Return non-nil if file names are case-insensitive."
+  (memq system-type '(windows-nt ms-dos cygwin)))
+
 (defun openfoam-file-name-equal-p (file-name-1 file-name-2)
   "Return non-nil if FILE-NAME-1 and FILE-NAME-2 shall be considered equal."
-  (if (memq system-type '(windows-nt ms-dos))
+  (if (openfoam-file-name-case-insensitive-p)
       (cl-equalp file-name-1 file-name-2)
-    (string= file-name-1 file-name-2)))
+    (string-equal file-name-1 file-name-2)))
 
 (defcustom openfoam-file-alist
   '(;; Required files in application directories.
@@ -967,14 +971,17 @@ Argument FILE-SPEC is the matching file name."
   "Return the OpenFOAM file properties associated with FILE-NAME.
 Value is a property list.  See ‘openfoam-file-alist’ for a list
 of file properties together with their meaning."
-  (catch t
-    (dolist (cell openfoam-file-alist)
-      (let ((file-spec (car cell))
-	    (plist (cdr cell)))
-	(when (if (plist-get plist :regexp)
-		  (string-match file-spec file-name)
-		(string-equal file-spec file-name))
-	  (throw t plist))))))
+  (let ((case-fold-search (openfoam-file-name-case-insensitive-p)))
+    (catch t
+      (dolist (cell openfoam-file-alist)
+	(let ((file-spec (car cell))
+	      (plist (cdr cell)))
+	  (when (if (plist-get plist :regexp)
+		    (string-match file-spec file-name)
+		  (or (openfoam-file-name-equal-p file-spec file-name)
+		      (let ((regexp (concat "/" (regexp-quote file-spec) "\\'")))
+			(string-match regexp file-name))))
+	    (throw t plist)))))))
 
 (defun openfoam-apply-file-template (template &optional mode)
   "Apply a file template to the current buffer.
